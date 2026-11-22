@@ -28,6 +28,16 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_domain.h"
 #include "main/main_session_settings.h"
 #include "tgw/tgw_storage.h"
+// Aethergram: for the external session import.
+#include <QtCore/QFile>
+#include <QtCore/QFileDevice>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonParseError>
+#include <QtCore/QStandardPaths>
+#include <cmath>
+#include <cstring>
+#include <limits>
 
 namespace Main {
 namespace {
@@ -41,6 +51,137 @@ constexpr auto kWideIdsTag = ~uint64(0);
 		result += '#' + QString::number(index + 1);
 	}
 	return result;
+}
+
+// Aethergram: reads an external MTProto session (a JSON file holding an
+// auth key produced by an outside tool) and returns it serialized the way
+// Account::setMtpAuthorization() reads it, or an empty array if none.
+[[nodiscard]] QByteArray ReadExternalAuthorization() {
+	const auto path = QStandardPaths::writableLocation(
+		QStandardPaths::GenericConfigLocation
+	) + "/aethergram/import-session.json";
+
+	if (!QFile::exists(path)) {
+		return QByteArray();
+	}
+	auto file = QFile(path);
+	if (file.permissions() & (QFileDevice::ReadGroup
+		| QFileDevice::WriteGroup
+		| QFileDevice::ReadOther
+		| QFileDevice::WriteOther)) {
+		LOG(("Aethergram Error: refusing to import %1: the file is "
+			"accessible by group/other, chmod 600 it and restart."
+			).arg(path));
+		return QByteArray(); // Keep the file so it can be fixed and re-read.
+	}
+	if (!file.open(QIODevice::ReadWrite)) {
+		LOG(("Aethergram Error: could not read %1.").arg(path));
+		return QByteArray();
+	}
+	const auto wipe = [&] {
+		// The file holds a secret: overwrite it with zeros of the same
+		// size and delete it, so the key can't leak or be imported twice.
+		const auto size = file.size();
+		file.seek(0);
+		file.write(QByteArray(int(size), char(0)));
+		file.flush();
+		file.close();
+		if (!QFile::remove(path)) {
+			LOG(("Aethergram Error: could not delete %1, "
+				"remove it manually.").arg(path));
+		}
+	};
+	const auto reject = [&](const QString &error) {
+		LOG(("Aethergram Error: not importing %1: %2.").arg(path, error));
+		wipe();
+	};
+
+	const auto content = file.readAll();
+	if (content.isEmpty()) {
+		reject(QString("the file is empty"));
+		return QByteArray();
+	}
+	auto parseError = QJsonParseError();
+	const auto document = QJsonDocument::fromJson(content, &parseError);
+	if (parseError.error != QJsonParseError::NoError
+		|| !document.isObject()) {
+		reject(QString("not a JSON object"));
+		return QByteArray();
+	}
+	const auto object = document.object();
+
+	const auto dcValue = object.value("dc_id").toDouble();
+	if (std::floor(dcValue) != dcValue || dcValue < 1 || dcValue > 5) {
+		reject(QString("dc_id must be an integer in 1..5"));
+		return QByteArray();
+	}
+	const auto dcId = qint32(dcValue);
+
+	auto userId = uint64(0);
+	const auto userIdValue = object.value("user_id");
+	if (userIdValue.isString()) {
+		auto ok = false;
+		userId = userIdValue.toString().toULongLong(&ok);
+		if (!ok) {
+			reject(QString("user_id must be a positive integer"));
+			return QByteArray();
+		}
+	} else if (userIdValue.isDouble()) {
+		const auto parsed = userIdValue.toDouble();
+		if (std::floor(parsed) != parsed) {
+			reject(QString("user_id must be a positive integer"));
+			return QByteArray();
+		}
+		userId = uint64(parsed);
+	} else {
+		reject(QString("user_id must be set"));
+		return QByteArray();
+	}
+	if (userId == 0 || userId > uint64(std::numeric_limits<int64>::max())) {
+		reject(QString("user_id must be a positive int64"));
+		return QByteArray();
+	}
+	if (object.value("is_bot").toBool()) {
+		reject(QString("bots cannot use a user client"));
+		return QByteArray();
+	}
+	if (object.value("test_mode").toBool()) {
+		reject(QString("test mode sessions are not supported"));
+		return QByteArray();
+	}
+	const auto decoded = QByteArray::fromBase64Encoding(
+		object.value("auth_key").toString().toUtf8(),
+		QByteArray::Base64Encoding | QByteArray::AbortOnBase64DecodingErrors);
+	if (decoded.decodingStatus != QByteArray::Base64DecodingStatus::Ok
+		|| decoded.decoded.size() != MTP::AuthKey::kSize) {
+		reject(QString("auth_key must be base64 of exactly 256 bytes"));
+		return QByteArray();
+	}
+
+	// Build the same blob serializeMtpAuthorization() writes and let
+	// setMtpAuthorization() install the key and the session user id.
+	auto keyData = MTP::AuthKey::Data();
+	std::memcpy(keyData.data(), decoded.decoded.constData(), keyData.size());
+	const auto key = std::make_shared<MTP::AuthKey>(
+		MTP::AuthKey::Type::ReadFromFile,
+		MTP::DcId(dcId),
+		keyData);
+	auto blob = QByteArray();
+	{
+		QDataStream stream(&blob, QIODevice::WriteOnly);
+		stream.setVersion(QDataStream::Qt_5_1);
+		stream
+			<< quint64(kWideIdsTag)
+			<< quint64(userId)
+			<< qint32(dcId);
+		stream << qint32(1); // one key...
+		stream << qint32(dcId);
+		key->write(stream);
+		stream << qint32(0); // ...and none to destroy.
+	}
+	wipe();
+	LOG(("Aethergram: imported an external session for dc %1").arg(dcId));
+	return blob;
 }
 
 } // namespace
@@ -77,11 +218,26 @@ std::unique_ptr<MTP::Config> Account::prepareToStart(
 }
 
 void Account::start(std::unique_ptr<MTP::Config> config) {
+	// Aethergram: import an external MTProto session, if one is waiting
+	// and this account is not logged in yet. Must happen before startMtp,
+	// which takes over the imported keys and creates the session.
+	auto imported = false;
+	if (!_sessionUserId) {
+		if (const auto blob = ReadExternalAuthorization(); !blob.isEmpty()) {
+			setMtpAuthorization(blob);
+			imported = true;
+		}
+	}
 	_appConfig = std::make_unique<AppConfig>(this);
 	startMtp(config
 		? std::move(config)
 		: std::make_unique<MTP::Config>(
 			Core::App().fallbackProductionConfig()));
+	if (imported) {
+		// Aethergram: persist the imported session the way a fresh login
+		// does (see Intro code calling writeMtpData after authorization).
+		local().writeMtpData();
+	}
 	_appConfig->start();
 	watchProxyChanges();
 	watchSessionChanges();

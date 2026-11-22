@@ -34,6 +34,47 @@ only as `-D TDESKTOP_API_ID=... -D TDESKTOP_API_HASH=...`; they are never
 printed and never committed — `/api.env` is gitignored. Override the location
 with `AETHERGRAM_API_ENV`.
 
+## Importing a session
+
+Aethergram can start up already logged in by importing an MTProto session
+(auth key) produced by an outside tool (`tg-session-gateway`), for example
+with `tools/import-gateway-session.py` (to be added), which writes the file
+described below.
+
+Usage: `tools/import-gateway-session.py --pyrogram-file ~/.pyrogram/main.session --source-is-stopped` — also `--telethon-file`, `--pyrogram-string`/`--telethon-string` (read from stdin), `--docker-volume NAME --session NAME`, plus `--gateway-url URL --alias ALIAS` (pauses tg-session-gateway) instead of `--source-is-stopped`; see `--help`.
+
+On startup, if the account is **not** logged in yet, Aethergram looks for:
+
+    ~/.config/aethergram/import-session.json
+
+(`$XDG_CONFIG_HOME/aethergram/import-session.json`) with mode **600**, containing:
+
+```json
+{
+  "dc_id": 2,
+  "user_id": 123456789012,
+  "auth_key": "<base64 of exactly 256 bytes>",
+  "is_bot": false,
+  "test_mode": false
+}
+```
+
+`dc_id` must be an integer in 1..5, `user_id` a positive int64 (number or
+decimal string — strings are safer, JSON numbers lose precision above 2^53),
+`is_bot`/`test_mode` optional and must be false/absent: bots cannot use a
+user client. Anything else is rejected.
+
+The file holds a secret: Aethergram refuses to read it if group or other can
+read or write it (`chmod 600`), never logs the key, and after reading it —
+whether the import succeeded or not — overwrites it with zeros and deletes
+it, so it can never be imported twice. Fix the permissions and restart to
+retry after a refusal.
+
+**Warning:** an auth key must only ever be used by one client at a time.
+Pause `tg-session-gateway` (or whatever produced the key) *before* starting
+Aethergram with it. If the key is used from two places simultaneously,
+Telegram reports `AUTH_KEY_DUPLICATED` and may revoke the key.
+
 ## Branch model
 
 * `upstream-dev` mirrors the upstream tdesktop release tag, no local commits.
