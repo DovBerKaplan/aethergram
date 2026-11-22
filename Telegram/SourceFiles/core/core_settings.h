@@ -1146,9 +1146,15 @@ private:
 	rpl::variable<float64> _dialogsNoChatWidthRatio; // per-window
 	rpl::variable<int> _thirdColumnWidth = kDefaultThirdColumnWidth; // p-w
 	bool _notifyFromAll = true;
+#ifdef Q_OS_LINUX
+	// Aethergram: default to the native window frame on Linux.
+	rpl::variable<bool> _nativeWindowFrame = true;
+#else // Q_OS_LINUX
 	rpl::variable<bool> _nativeWindowFrame = false;
+#endif // Q_OS_LINUX
 	rpl::variable<std::optional<bool>> _systemDarkMode = std::nullopt;
-	rpl::variable<bool> _systemDarkModeEnabled = true;
+	// Aethergram: auto night mode following the system is off by default.
+	rpl::variable<bool> _systemDarkModeEnabled = false;
 	bool _systemAccentColorEnabled = false;
 	rpl::variable<WindowTitleContent> _windowTitleContent;
 	WindowPosition _windowPosition; // per-window
@@ -1183,7 +1189,13 @@ private:
 	rpl::variable<bool> _ttlVoiceClickTooltipHidden = false;
 	WindowPosition _ivPosition;
 	WindowPosition _callPanelPosition;
+#ifdef Q_OS_LINUX
+	// Aethergram: default custom font family on Linux. An empty string
+	// still means the system font (when the user clears the font).
+	QString _customFontFamily = QStringLiteral("Inter");
+#else // Q_OS_LINUX
 	QString _customFontFamily;
+#endif // Q_OS_LINUX
 	bool _systemUnlockEnabled = false;
 	std::optional<bool> _weatherInCelsius;
 	QByteArray _tonsiteStorageToken;
