@@ -787,18 +787,10 @@ void UnreadBar::paint(
 	const auto st = context.st;
 	const auto bottom = y + height();
 	y += marginTop();
-	p.fillRect(
-		0,
-		y,
-		w,
-		height() - marginTop() - st::lineWidth,
-		st->historyUnreadBarBg());
-	p.fillRect(
-		0,
-		bottom - st::lineWidth,
-		w,
-		st::lineWidth,
-		st->historyUnreadBarBorder());
+	// Aethergram: not a full-width band with lines, but a small chip
+	// in the middle, like the date chips (drawn below, once the width
+	// the text may take is known).
+	(void)bottom;
 	p.setFont(st::historyUnreadBarFont);
 	p.setPen(st->historyUnreadBarFg());
 
@@ -815,6 +807,19 @@ void UnreadBar::paint(
 	const auto skip = st::historyUnreadBarHeight
 		- 2 * st::lineWidth
 		- st::historyUnreadBarFont->height;
+	{
+		const auto chipHeight = height() - marginTop() - 8;
+		const auto chip = QRect(
+			(w - width) / 2 - 14,
+			y + 4,
+			width + 28,
+			chipHeight);
+		auto hq = PainterHighQualityEnabler(p);
+		p.setPen(Qt::NoPen);
+		p.setBrush(st->msgServiceBg());
+		p.drawRoundedRect(chip, chipHeight / 2., chipHeight / 2.);
+		p.setPen(st->historyUnreadBarFg());
+	}
 	p.drawText(
 		(w - width) / 2,
 		y + (skip / 2) + st::historyUnreadBarFont->ascent,

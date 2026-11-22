@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/message_bubble.h"
+#include "aether/aether_surface.h" // Aethergram
 
 #include "ui/cached_round_corners.h"
 #include "ui/image/image_prepare.h"
@@ -294,6 +295,26 @@ void PaintSolidBubble(QPainter &p, const SimpleBubble &args) {
 		tail.paint(p, bottomPosition - tailShift, args.outerWidth);
 		return tail.width();
 	});
+	// Aethergram: a bubble is made of the same stuff as the island's cards:
+	// a shade lighter at the top, a fine grain, a rim in the accent's hue,
+	// all inside the bubble's own corners.
+	const auto radius = [&](BubbleCornerRounding corner) {
+		switch (corner) {
+		case BubbleCornerRounding::Large: return double(st::bubbleRadiusLarge);
+		case BubbleCornerRounding::Small:
+		case BubbleCornerRounding::Tail: return double(st::bubbleRadiusSmall);
+		}
+		return 0.;
+	};
+	const auto path = Aether::RoundedPath(
+		QRectF(args.geometry).adjusted(0.5, 0.5, -0.5, -0.5),
+		radius(args.rounding.topLeft),
+		radius(args.rounding.topRight),
+		radius(args.rounding.bottomRight),
+		radius(args.rounding.bottomLeft));
+	Aether::PaintSheen(p, args.geometry, path);
+	Aether::PaintGrain(p, args.geometry, path);
+	Aether::PaintRim(p, path);
 }
 
 } // namespace

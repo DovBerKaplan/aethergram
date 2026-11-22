@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mainwidget.h"
+#include "aether/aether_surface.h" // Aethergram
 
 #include "api/api_updates.h"
 #include "api/api_views.h"
@@ -2742,23 +2743,29 @@ void MainWidget::updateControlsGeometry() {
 		? width()
 		: 0;
 	if (isOneColumn()) {
+		// Aethergram: the one column is a shelf too (a narrow window, or a
+		// chat shown over the list), so it keeps the field around it.
+		constexpr auto g = Aether::kGap;
+		const auto shelfWidth = dialogsWidth - 2 * g;
 		if (_callTopBar) {
-			_callTopBar->resizeToWidth(dialogsWidth);
-			_callTopBar->moveToLeft(0, 0);
+			_callTopBar->resizeToWidth(shelfWidth);
+			_callTopBar->moveToLeft(g, g);
 		}
 		if (_exportTopBar) {
-			_exportTopBar->resizeToWidth(dialogsWidth);
-			_exportTopBar->moveToLeft(0, _callTopBarHeight);
+			_exportTopBar->resizeToWidth(shelfWidth);
+			_exportTopBar->moveToLeft(g, g + _callTopBarHeight);
 		}
 		if (_player) {
-			_player->resizeToWidth(dialogsWidth);
-			_player->moveToLeft(0, _callTopBarHeight + _exportTopBarHeight);
+			_player->resizeToWidth(shelfWidth);
+			_player->moveToLeft(
+				g,
+				g + _callTopBarHeight + _exportTopBarHeight);
 		}
 		const auto mainSectionGeometry = QRect(
-			0,
-			mainSectionTop,
-			dialogsWidth,
-			height() - mainSectionTop);
+			g,
+			g + mainSectionTop,
+			shelfWidth,
+			height() - mainSectionTop - 2 * g);
 		if (_dialogs) {
 			_dialogs->setGeometryWithTopMoved(
 				mainSectionGeometry,
@@ -2767,76 +2774,107 @@ void MainWidget::updateControlsGeometry() {
 		_history->setGeometryWithTopMoved(
 			mainSectionGeometry,
 			_contentScrollAddToY);
+		if (_sideShadow) {
+			_sideShadow->hide();
+		}
 		if (_hider) _hider->setGeometry(0, 0, dialogsWidth, height());
+		// Rough when it is the list that shows; the chat is the backdrop.
+		const auto showingList = _dialogs && !_dialogs->isHidden();
+		Aether::SetShelves(this, {
+			{ QRect(g, g, shelfWidth, height() - 2 * g), showingList }
+		});
 	} else {
 		auto thirdSectionWidth = _thirdSection ? _thirdColumnWidth : 0;
-		if (_thirdSection) {
-			auto thirdSectionTop = getThirdSectionTop();
-			_thirdSection->setGeometry(
-				width() - thirdSectionWidth,
-				thirdSectionTop,
-				thirdSectionWidth,
-				height() - thirdSectionTop);
-		}
 		const auto shadowTop = _controller->window().verticalShadowTop();
 		const auto shadowHeight = height() - shadowTop;
 		if (_dialogs) {
 			accumulate_min(
 				dialogsWidth,
 				width() - st::columnMinimalWidthMain);
-			_dialogs->setGeometryToLeft(0, 0, dialogsWidth, height());
+		}
+		// Aethergram: the columns are shelves on a field. Each one is
+		// inset by a gap (half of it where two meet), and the lines
+		// between them are gone.
+		constexpr auto g = Aether::kGap;
+		const auto half = g / 2;
+		const auto shelfTop = g;
+		const auto shelfHeight = height() - 2 * g;
+		const auto mainLeft = dialogsWidth + half;
+		const auto mainWidth = width()
+			- dialogsWidth
+			- thirdSectionWidth
+			- half
+			- (_thirdSection ? half : g);
+		auto shelves = std::vector<Aether::Shelf>();
+		if (_dialogs) {
+			const auto rect = QRect(
+				g,
+				shelfTop,
+				dialogsWidth - g - half,
+				shelfHeight);
+			_dialogs->setGeometryToLeft(
+				rect.x(),
+				rect.y(),
+				rect.width(),
+				rect.height());
+			shelves.push_back({ rect });
+		}
+		if (_thirdSection) {
+			const auto thirdTop = getThirdSectionTop();
+			const auto rect = QRect(
+				width() - thirdSectionWidth + half,
+				thirdTop + g,
+				thirdSectionWidth - half - g,
+				height() - thirdTop - 2 * g);
+			_thirdSection->setGeometry(rect);
+			shelves.push_back({ rect });
 		}
 		if (_sideShadow) {
-			_sideShadow->setGeometryToLeft(
-				dialogsWidth,
-				shadowTop,
-				st::lineWidth,
-				shadowHeight);
+			_sideShadow->hide();
 		}
 		if (_thirdShadow) {
-			_thirdShadow->setGeometryToLeft(
-				width() - thirdSectionWidth - st::lineWidth,
-				shadowTop,
-				st::lineWidth,
-				shadowHeight);
+			_thirdShadow->hide();
 		}
-		const auto mainSectionWidth = width()
-			- dialogsWidth
-			- thirdSectionWidth;
+		const auto mainSectionWidth = mainWidth;
 		if (_callTopBar) {
 			_callTopBar->resizeToWidth(mainSectionWidth);
-			_callTopBar->moveToLeft(dialogsWidth, 0);
+			_callTopBar->moveToLeft(mainLeft, g);
 		}
 		if (_exportTopBar) {
 			_exportTopBar->resizeToWidth(mainSectionWidth);
-			_exportTopBar->moveToLeft(dialogsWidth, _callTopBarHeight);
+			_exportTopBar->moveToLeft(mainLeft, g + _callTopBarHeight);
 		}
 		if (_player) {
 			_player->resizeToWidth(mainSectionWidth);
 			_player->moveToLeft(
-				dialogsWidth,
-				_callTopBarHeight + _exportTopBarHeight);
+				mainLeft,
+				g + _callTopBarHeight + _exportTopBarHeight);
 		}
-		_history->setGeometryWithTopMoved(QRect(
-			dialogsWidth,
-			mainSectionTop,
+		const auto mainRect = QRect(
+			mainLeft,
+			g + mainSectionTop,
 			mainSectionWidth,
-			height() - mainSectionTop
-		), _contentScrollAddToY);
+			height() - mainSectionTop - 2 * g);
+		_history->setGeometryWithTopMoved(mainRect, _contentScrollAddToY);
+		// The chat's card is the backdrop: a rim, no grain.
+		shelves.push_back({
+			QRect(mainLeft, g, mainSectionWidth, height() - 2 * g),
+			false });
 		if (_hider) {
 			_hider->setGeometryToLeft(
-				dialogsWidth,
+				mainLeft,
 				0,
 				mainSectionWidth,
 				height());
 		}
+		Aether::SetShelves(this, std::move(shelves));
 	}
 	if (_mainSection) {
 		const auto mainSectionGeometry = QRect(
 			_history->x(),
-			mainSectionTop,
+			_history->y(),
 			_history->width(),
-			height() - mainSectionTop);
+			_history->height());
 		_mainSection->setGeometryWithTopMoved(
 			mainSectionGeometry,
 			_contentScrollAddToY);

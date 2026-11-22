@@ -105,7 +105,8 @@ MainWindow::MainWindow(not_null<Window::Controller*> controller)
 		Ui::ForceFullRepaint(this);
 	}, lifetime());
 
-	setAttribute(Qt::WA_OpaquePaintEvent);
+	// Aethergram: the window is glass between its shelves, so it does not
+	// claim to paint every pixel itself.
 }
 
 void MainWindow::initHook() {
