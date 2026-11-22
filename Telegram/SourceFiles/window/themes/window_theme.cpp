@@ -41,10 +41,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "boxes/background_box.h"
 #include "core/application.h"
 #include "webview/webview_common.h"
+#include "settings.h" // Aethergram: cNoAetherTheme() for the Aether palette.
 
 #include <QtCore/QBuffer>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QStandardPaths> // Aethergram: AetherPalettePath() location.
 #include <QtCore/QFileSystemWatcher>
 #include <QtGui/QGuiApplication>
 #include <QtGui/QStyleHints>
@@ -1433,6 +1435,42 @@ void KeepApplied() {
 	Local::writeTheme(saved);
 	ClearApplying();
 	Background()->keepApplied(saved.object, true);
+}
+
+// Aethergram: the Aether desktop writes its live palette here and replaces
+// it atomically on accent / light-dark changes; the theme watcher below
+// re-applies it, and KeepApplied() re-arms the watcher after a rename.
+// Aethergram: Aether writes a .tdesktop-theme zip (palette + generated
+// chat background); the older palette-only file is the fallback.
+QString AetherPalettePath() {
+	const auto base = QStandardPaths::writableLocation(
+		QStandardPaths::GenericDataLocation) + u"/aethergram/aether"_q;
+	const auto theme = base + u".tdesktop-theme"_q;
+	return QFile::exists(theme) ? theme : (base + u".tdesktop-palette"_q);
+}
+
+void ApplyAetherPaletteIfPresent() {
+	if (cNoAetherTheme()) {
+		return;
+	}
+	const auto path = AetherPalettePath();
+	if (!QFile::exists(path)) {
+		return;
+	}
+	// Never replace a theme the user picked themselves. Either Aether file
+	// counts as ours, so moving from the palette to the zip happens by itself.
+	const auto &current = Background()->themeObject();
+	const auto base = path.left(path.lastIndexOf('.'));
+	const auto ours = (current.pathAbsolute == base + u".tdesktop-theme"_q)
+		|| (current.pathAbsolute == base + u".tdesktop-palette"_q);
+	const auto builtIn = IsEmbeddedTheme(current.pathAbsolute)
+		&& !current.cloud.id;
+	if (!ours && !builtIn) {
+		return;
+	}
+	if (Apply(path)) {
+		KeepApplied();
+	}
 }
 
 void KeepFromEditor(

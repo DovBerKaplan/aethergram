@@ -87,6 +87,11 @@ bool Apply(std::unique_ptr<Preview> preview);
 void ApplyDefaultWithPath(const QString &themePath);
 bool ApplyEditedPalette(const QByteArray &content);
 void KeepApplied();
+
+// Aethergram: live palette file written by the Aether desktop.
+[[nodiscard]] QString AetherPalettePath();
+void ApplyAetherPaletteIfPresent();
+
 void KeepFromEditor(
 	const QByteArray &originalContent,
 	const ParsedTheme &originalParsed,

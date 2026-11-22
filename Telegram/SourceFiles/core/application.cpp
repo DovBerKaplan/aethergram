@@ -565,6 +565,10 @@ void Application::startDomain() {
 void Application::startSettingsAndBackground() {
 	Local::rewriteSettingsIfNeeded();
 	Window::Theme::Background()->start();
+	// Aethergram: follow the Aether desktop palette (re-read on every start,
+	// so changes made while the app was closed are picked up). Only here:
+	// keeping a theme writes settings, which is not allowed any earlier.
+	Window::Theme::ApplyAetherPaletteIfPresent();
 	checkSystemDarkMode();
 	Ui::SetScreenReaderModeDisabled(
 		settings().readPref<bool>(kScreenReaderModeDisabledKey));

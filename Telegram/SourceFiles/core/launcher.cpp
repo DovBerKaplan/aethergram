@@ -603,6 +603,7 @@ void Launcher::processArguments() {
 		{ "-fixprevious"    , KeyFormat::NoValues },
 		{ "-cleanup"        , KeyFormat::NoValues },
 		{ "-noupdate"       , KeyFormat::NoValues },
+		{ "-noaethertheme"  , KeyFormat::NoValues }, // Aethergram:
 		{ "-tosettings"     , KeyFormat::NoValues },
 		{ "-startintray"    , KeyFormat::NoValues },
 		{ "-quit"           , KeyFormat::NoValues },
@@ -652,6 +653,7 @@ void Launcher::processArguments() {
 		: parseResult.contains("-cleanup") ? LaunchModeCleanup
 		: LaunchModeNormal;
 	gNoStartUpdate = parseResult.contains("-noupdate");
+	gNoAetherTheme = parseResult.contains("-noaethertheme"); // Aethergram:
 	gStartToSettings = parseResult.contains("-tosettings");
 	gStartInTray = parseResult.contains("-startintray");
 	gQuit = parseResult.contains("-quit");

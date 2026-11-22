@@ -81,3 +81,18 @@ Other Telegram-styled icons that are still shipped (not referenced by
 * `Telegram/Resources/art/icon_green.png`
 * `Telegram/Resources/art/iconbig_green.png`
 * `Telegram/Resources/art/icon_round512@2x.png`
+
+## Aether palette
+
+The Aether desktop (`system/aether-accent-sync`, `system/aether-mode-sync`)
+writes its live palette to `~/.local/share/aethergram/aether.tdesktop-palette`,
+replacing the file atomically on every change.
+
+Aethergram applies this palette on start if the currently selected theme is a
+built-in one or is already this file. While the app is running, upstream's
+theme watcher re-applies the file live, so accent and light-dark switches made
+in the Aether desktop show up immediately.
+
+Opt out by passing `-noaethertheme`. Choosing another theme in Settings stops
+following the Aether palette until you switch back to a built-in theme and
+restart Aethergram.

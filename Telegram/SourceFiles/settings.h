@@ -77,6 +77,7 @@ DeclareSetting(bool, Restarting);
 DeclareSetting(bool, RestartingToSettings);
 DeclareSetting(int32, LastUpdateCheck);
 DeclareSetting(bool, NoStartUpdate);
+DeclareSetting(bool, NoAetherTheme); // Aethergram: -noaethertheme opt-out
 DeclareSetting(bool, StartToSettings);
 DeclareSetting(bool, DebugMode);
 DeclareSetting(bool, TestAgent);

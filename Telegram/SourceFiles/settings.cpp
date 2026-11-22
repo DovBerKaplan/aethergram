@@ -36,6 +36,7 @@ bool gRestartingUpdate = false, gRestarting = false, gRestartingToSettings = fal
 bool gQuit = false;
 int32 gLastUpdateCheck = 0;
 bool gNoStartUpdate = false;
+bool gNoAetherTheme = false; // Aethergram: -noaethertheme opt-out
 bool gStartToSettings = false;
 bool gDebugMode = false;
 bool gTestAgent = false;
