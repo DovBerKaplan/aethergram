@@ -78,7 +78,7 @@ struct WindowColumns {
 struct WindowTitleContent {
 	bool hideChatName : 1 = false;
 	bool hideAccountName : 1 = false;
-	bool hideTotalUnread : 1 = false;
+	bool hideTotalUnread : 1 = true; // Aethergram: title counter off by default
 
 	friend inline constexpr auto operator<=>(
 		WindowTitleContent,

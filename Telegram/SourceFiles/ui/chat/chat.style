@@ -323,7 +323,7 @@ historyInfoToast: Toast(defaultToast) {
 }
 historyInfoToastIcon: icon {{ "toast/info", toastFg }};
 
-bubbleRadiusSmall: roundRadiusLarge;
+bubbleRadiusSmall: 8px; // Aethergram: was roundRadiusLarge
 bubbleRadiusLarge: 16px;
 
 historyPhotoLeft: 14px;

@@ -225,10 +225,9 @@ int PaintBadges(
 		st.active = context.active;
 		st.selected = context.selected;
 		st.muted = badgesState.unreadMuted;
-		const auto counter = FormatUnreadCounter(
-			badgesState.unreadCounter,
-			badgesState.mention || badgesState.reaction || badgesState.poll,
-			narrow);
+		// Aethergram: compact unread counter ("222K" instead of "222665").
+		const auto counter = FormatUnreadCounterShort(
+			badgesState.unreadCounter);
 		const auto badge = PaintUnreadBadge(p, counter, right, top, st);
 		right -= badge.width() + st.padding;
 		++painted;
@@ -484,7 +483,22 @@ void PaintRow(
 	if (swipeTranslation) {
 		p.translate(swipeMirrored ? swipeTranslation : -swipeTranslation, 0);
 	}
-	p.fillRect(geometry, bg);
+	// Aethergram: rounded row highlight like Aether's ListRow - a rounded
+	// rect inset 8px horizontally and 2px vertically (RTL-symmetric),
+	// radius 12, instead of a full-width rectangle fill. The unhighlighted
+	// row background stays the plain list background.
+	if (context.active || context.selected) {
+		p.fillRect(geometry, context.currentBg);
+		auto hq = PainterHighQualityEnabler(p);
+		p.setPen(Qt::NoPen);
+		p.setBrush(bg);
+		p.drawRoundedRect(
+			geometry.marginsRemoved(QMargins(8, 2, 8, 2)),
+			12.,
+			12.);
+	} else {
+		p.fillRect(geometry, bg);
+	}
 	if (!(flags & Flag::TopicJumpRipple)) {
 		auto ripple = context.active
 			? st::dialogsRippleBgActive

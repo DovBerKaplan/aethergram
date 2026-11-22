@@ -88,25 +88,25 @@ dialogsTextStyle: defaultTextStyle;
 dialogsDateFont: font(13px);
 dialogsDateSkip: 5px;
 
-dialogsRowHeight: 62px;
+dialogsRowHeight: 64px; // Aethergram: was 62px
 dialogsFilterPadding: point(7px, 7px);
 dialogsFilterSkip: 4px;
 
 defaultDialogRow: DialogRow {
 	height: dialogsRowHeight;
 	padding: margins(10px, 8px, 10px, 8px);
-	photoSize: 46px;
-	nameLeft: 68px;
+	photoSize: 44px; // Aethergram: was 46px
+	nameLeft: 66px; // Aethergram: was 68px (padding.left 10 + photoSize 44 + gap 12)
 	nameTop: 10px;
-	textLeft: 68px;
+	textLeft: 66px; // Aethergram: was 68px
 	textTop: 34px;
 }
 communityRequestableListItem: PeerListItem(defaultPeerListItem) {
-	height: dialogsRowHeight;            // == st::defaultDialogRow.height (62px)
-	photoSize: 46px;                     // == st::defaultDialogRow.photoSize
+	height: dialogsRowHeight;            // == st::defaultDialogRow.height (64px) // Aethergram
+	photoSize: 44px;                     // == st::defaultDialogRow.photoSize // Aethergram: was 46px
 	photoPosition: point(10px, 8px);     // == st::defaultDialogRow.padding left/top (10,8)
-	namePosition: point(68px, 10px);     // == st::defaultDialogRow.nameLeft / nameTop
-	statusPosition: point(68px, 34px);   // == st::defaultDialogRow.textLeft / textTop
+	namePosition: point(66px, 10px);     // == st::defaultDialogRow.nameLeft / nameTop // Aethergram: was 68px
+	statusPosition: point(66px, 34px);   // == st::defaultDialogRow.textLeft / textTop // Aethergram: was 68px
 }
 communityRequestableList: PeerList(defaultPeerList) {
 	item: communityRequestableListItem;
