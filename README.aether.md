@@ -5,12 +5,14 @@ restyled for the Aether KDE desktop. It is not affiliated with Telegram.
 
 ## Building
 
-One-time, after cloning and after every upstream sync:
+One-time, after cloning and after every upstream sync (needs docker and
+poetry, `pipx install poetry`):
 
-    Telegram/build/prepare/linux.sh
+    tools/prepare-image.sh        # JOBS=4 by default
 
-Recommended on a 16 GB RAM machine: `DEBUG= LTO= JOBS=6 ./Telegram/build/prepare/linux.sh`
-(run as `bash Telegram/build/prepare/linux.sh` with those env vars set).
+It wraps upstream's `Telegram/build/prepare/linux.sh` recipe: no debug/LTO
+image, every `make -j` pinned to `JOBS` (upstream uses all cores, which
+starves a 16 GB laptop), and an expat upgrade the Rocky 8 image needs.
 
 Then, per build (needs the `tdesktop:centos_env` docker image):
 
