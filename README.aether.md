@@ -143,3 +143,12 @@ in the Aether desktop show up immediately.
 Opt out by passing `-noaethertheme`. Choosing another theme in Settings stops
 following the Aether palette until you switch back to a built-in theme and
 restart Aethergram.
+
+## Language and direction
+
+Aethergram follows the Aether desktop language (`[Interface] Language` in
+`~/.config/aetherislandrc`, read only), but only when that value changes:
+a language you pick in Aethergram's Settings stays until Aether changes
+its own. Switching while logged in restarts the app once (upstream
+behaviour). Hebrew (and other right-to-left languages) turn on the
+right-to-left layout; `AETHERGRAM_LAYOUT=ltr|rtl` forces it for testing.

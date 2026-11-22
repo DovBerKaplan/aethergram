@@ -134,6 +134,8 @@ PRIVATE
     # Aethergram: API credentials are defined here (see also
     # set_source_files_properties for aether_api.cpp below).
     aether/aether_api.cpp
+    aether/aether_language.cpp
+    aether/aether_language.h
     api/api_attached_stickers.cpp
     api/api_attached_stickers.h
     api/api_authorizations.cpp

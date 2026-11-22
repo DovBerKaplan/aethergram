@@ -76,6 +76,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "media/system_media_controls_manager.h"
 #include "window/notifications_manager.h"
 #include "window/themes/window_theme.h"
+#include "aether/aether_language.h" // Aethergram
 #include "ui/widgets/tooltip.h"
 #include "ui/gl/gl_detection.h"
 #include "ui/text/text_options.h"
@@ -317,6 +318,8 @@ void Application::run() {
 	_notifications = std::make_unique<Window::Notifications::System>();
 
 	startLocalStorage();
+	// Aethergram: right-to-left for Hebrew, before any widget exists.
+	Aether::ApplyLayoutDirection();
 
 	style::SetCustomFont(settings().customFontFamily());
 	style::internal::StartFonts();
@@ -445,6 +448,8 @@ void Application::run() {
 	DEBUG_LOG(("Application Info: window created..."));
 
 	startDomain();
+	// Aethergram: follow the Aether desktop language when it changes.
+	Aether::FollowDesktopLanguage();
 	startTray();
 
 	_lastActivePrimaryWindow->firstShow();
