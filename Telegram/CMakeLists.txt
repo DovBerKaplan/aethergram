@@ -131,6 +131,9 @@ nice_target_sources(Telegram ${src_loc}
 PRIVATE
     ${style_files}
 
+    # Aethergram: API credentials are defined here (see also
+    # set_source_files_properties for aether_api.cpp below).
+    aether/aether_api.cpp
     api/api_attached_stickers.cpp
     api/api_attached_stickers.h
     api/api_authorizations.cpp
@@ -2926,10 +2929,15 @@ target_include_directories(Telegram PRIVATE ${src_loc})
 
 target_compile_definitions(Telegram
 PRIVATE
-    TDESKTOP_API_ID=${TDESKTOP_API_ID}
-    TDESKTOP_API_HASH=${TDESKTOP_API_HASH}
     G_LOG_DOMAIN="Telegram"
 )
+
+# Aethergram: keep TDESKTOP_API_ID / TDESKTOP_API_HASH out of the target-wide
+# compile definitions so changing the credentials rebuilds only aether_api.cpp
+# instead of all ~1230 translation units. The hash stays an unquoted token here
+# and is stringified with QT_STRINGIFY in aether_api.cpp, exactly like config.h
+# used to do it.
+set_source_files_properties(${src_loc}/aether/aether_api.cpp PROPERTIES COMPILE_DEFINITIONS "TDESKTOP_API_ID=${TDESKTOP_API_ID};TDESKTOP_API_HASH=${TDESKTOP_API_HASH}")
 
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if (APPLE

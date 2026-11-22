@@ -34,6 +34,10 @@ only as `-D TDESKTOP_API_ID=... -D TDESKTOP_API_HASH=...`; they are never
 printed and never committed — `/api.env` is gitignored. Override the location
 with `AETHERGRAM_API_ENV`.
 
+## Build notes
+
+- API credentials compile into one file (`Telegram/SourceFiles/aether/aether_api.cpp`), so changing them rebuilds in minutes instead of triggering a full rebuild of all ~1230 sources.
+
 ## Importing a session
 
 Aethergram can start up already logged in by importing an MTProto session
