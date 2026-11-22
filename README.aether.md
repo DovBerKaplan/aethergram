@@ -14,8 +14,8 @@ Recommended on a 16 GB RAM machine: `DEBUG= LTO= JOBS=6 ./Telegram/build/prepare
 
 Then, per build (needs the `tdesktop:centos_env` docker image):
 
-    tools/build.sh                 # CONFIG=Release JOBS=6 is a good default
-    CONFIG=Release JOBS=8 tools/build.sh
+    tools/build.sh                 # JOBS=2 by default: single files need up to 5 GB of RAM
+    CONFIG=Release JOBS=4 tools/build.sh   # only with plenty of free RAM
     tools/build.sh --test          # public test API credentials, no env file
 
 ## API credentials

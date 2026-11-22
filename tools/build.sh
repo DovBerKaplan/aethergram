@@ -6,7 +6,8 @@
 # same invocation as .github/workflows/linux.yml) so that:
 #   * API credentials come from a private env file and are passed to cmake
 #     as -D flags without ever being printed or committed,
-#   * ccache state lives in the aethergram-ccache docker volume,
+#   * ccache state lives in ~/.cache/aethergram-ccache (owned by you, since
+#     the container runs as your uid; a docker volume would be root's),
 #   * autoupdate and crash reporting are always disabled.
 #
 # Usage:
@@ -14,8 +15,8 @@
 #
 # Environment:
 #   CONFIG                cmake --build config, Debug (default) or Release
-#   JOBS                  parallelism, passed as CMAKE_BUILD_PARALLEL_LEVEL,
-#                         default 6
+#   JOBS                  parallelism (default 2), passed as CMAKE_BUILD_PARALLEL_LEVEL,
+#                         default 2 (a single file can need 5 GB of RAM)
 #   AETHERGRAM_API_ENV    credentials file, default
 #                         ~/.config/aethergram/api.env
 #
@@ -83,12 +84,15 @@ else
     )
 fi
 
+ccache_dir="${AETHERGRAM_CCACHE_DIR:-$HOME/.cache/aethergram-ccache}"
+mkdir -p "$ccache_dir"
+
 exec docker run --rm \
     -u "$(id -u):$(id -g)" \
     -v "$PWD:/usr/src/tdesktop" \
-    -v aethergram-ccache:/var/cache/ccache \
+    -v "$ccache_dir:/var/cache/ccache" \
     -e CONFIG="${CONFIG:-Debug}" \
-    -e CMAKE_BUILD_PARALLEL_LEVEL="${JOBS:-6}" \
+    -e CMAKE_BUILD_PARALLEL_LEVEL="${JOBS:-2}" \
     -e CCACHE_SLOPPINESS=pch_defines,time_macros \
     tdesktop:centos_env \
     env -u CCACHE_DISABLE /usr/src/tdesktop/Telegram/build/docker/centos_env/build.sh \
