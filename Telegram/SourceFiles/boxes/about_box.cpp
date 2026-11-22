@@ -65,7 +65,8 @@ rpl::producer<TextWithEntities> Text3() {
 } // namespace
 
 void AboutBox(not_null<Ui::GenericBox*> box) {
-	box->setTitle(u"Telegram Desktop"_q);
+	// Aethergram: never present the app as official Telegram (API ToS).
+	box->setTitle(u"Aethergram"_q);
 
 	auto layout = box->verticalLayout();
 
@@ -127,6 +128,9 @@ void AboutBox(not_null<Ui::GenericBox*> box) {
 	addText(Text1());
 	addText(Text2());
 	addText(Text3());
+	// Aethergram: disclaim official status, keep upstream license/source links above.
+	addText(rpl::single(TextWithEntities{
+		u"Unofficial Telegram client, based on Telegram Desktop (GPLv3)"_q }));
 
 	box->addButton(tr::lng_close(), [=] { box->closeBox(); });
 

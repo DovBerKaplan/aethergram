@@ -1,22 +1,23 @@
 [Desktop Entry]
-Name=Telegram
-Comment=New era of messaging
+Name=Aethergram
+Comment=Unofficial Telegram client
 TryExec=Telegram
 Exec=Telegram -- %U
-Icon=org.telegram.desktop
+Icon=io.github.dovberkaplan.Aethergram
 Terminal=false
-StartupWMClass=TelegramDesktop
+StartupWMClass=Aethergram
 Type=Application
 Categories=Chat;Network;InstantMessaging;Qt;
 MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;x-scheme-handler/ton;
-Keywords=tg;chat;im;messaging;messenger;sms;tdesktop;
+Keywords=tg;chat;im;messaging;messenger;sms;aethergram;
 Actions=quit;
 DBusActivatable=true
 SingleMainWindow=true
 X-GNOME-UsesNotifications=true
 X-GNOME-SingleWindow=true
+X-KDE-Wayland-Interfaces=org_kde_kwin_blur
 
 [Desktop Action quit]
 Exec=Telegram -quit
-Name=Quit Telegram
+Name=Quit Aethergram
 Icon=application-exit

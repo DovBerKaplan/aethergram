@@ -24,8 +24,13 @@ StartWidget::StartWidget(
 	not_null<Data*> data)
 : Step(parent, account, data, true) {
 	setMouseTracking(true);
-	setTitleText(rpl::single(u"Telegram Desktop"_q));
-	setDescriptionText(tr::lng_intro_about());
+	// Aethergram: never present the app as official Telegram (API ToS).
+	setTitleText(rpl::single(u"Aethergram"_q));
+	// Aethergram: literal, not tr::lng_intro_about(), so that cloud
+	// language packs can't bring back the "official" wording.
+	setDescriptionText(rpl::single(
+		u"Unofficial Telegram client for the Aether desktop.\n"
+		"Not affiliated with Telegram."_q));
 	show();
 }
 

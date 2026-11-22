@@ -43,3 +43,41 @@ To sync with a new upstream release tag `vNEW` (previous one `vOLD`):
     git fetch upstream --tags
     git rebase --onto vNEW vOLD aether
     git submodule update --init --recursive
+
+## Artwork TODO
+
+The Linux app id is `io.github.dovberkaplan.Aethergram`, but the artwork shipped
+under that name is still upstream Telegram artwork. These files must be replaced
+with non-Telegram artwork before any public release (same pixel size, same file
+name, so the CMake install rules and the qrc aliases keep working):
+
+Installed as the hicolor app icon (`io.github.dovberkaplan.Aethergram.png`,
+`Telegram/CMakeLists.txt`), used by snap/flatpak packaging too:
+
+* `Telegram/Resources/art/icon16.png` and `icon16@2x.png`
+* `Telegram/Resources/art/icon32.png` and `icon32@2x.png`
+* `Telegram/Resources/art/icon48.png` and `icon48@2x.png`
+* `Telegram/Resources/art/icon64.png` and `icon64@2x.png`
+* `Telegram/Resources/art/icon128.png` and `icon128@2x.png`
+* `Telegram/Resources/art/icon256.png` and `icon256@2x.png`
+* `Telegram/Resources/art/icon512.png` and `icon512@2x.png`
+
+Installed as the symbolic tray icons
+(`io.github.dovberkaplan.Aethergram{,-attention,-mute}-symbolic.svg`):
+
+* `Telegram/Resources/icons/tray_monochrome.svg`
+* `Telegram/Resources/icons/tray_monochrome_attention.svg`
+* `Telegram/Resources/icons/tray_monochrome_mute.svg`
+
+Bundled in-app fallbacks (qrc `:/gui/art/...`), including the one copied to
+`~/.local/share/icons/hicolor/256x256/apps/` on first run:
+
+* `Telegram/Resources/art/logo_256.png`
+* `Telegram/Resources/art/logo_256_no_margin.png`
+
+Other Telegram-styled icons that are still shipped (not referenced by
+`lib/xdg`, listed for completeness):
+
+* `Telegram/Resources/art/icon_green.png`
+* `Telegram/Resources/art/iconbig_green.png`
+* `Telegram/Resources/art/icon_round512@2x.png`

@@ -991,7 +991,8 @@ void MainWindow::updateTitle() {
 		: Dialogs::Key();
 	const auto thread = key ? key.thread() : nullptr;
 	if (!thread) {
-		setTitle((user.isEmpty() ? u"Telegram"_q : user) + added + suffix);
+		// Aethergram: never present the app as official Telegram (API ToS).
+		setTitle((user.isEmpty() ? u"Aethergram"_q : user) + added + suffix);
 		return;
 	}
 	const auto history = thread->owningHistory();
