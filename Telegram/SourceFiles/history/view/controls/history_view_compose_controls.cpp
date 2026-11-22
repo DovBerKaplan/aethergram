@@ -136,6 +136,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_peer_menu.h"
 #include "window/window_session_controller.h"
 #include "mainwindow.h"
+#include "aether/aether_surface.h"
 #include "styles/style_calls.h"
 #include "styles/style_chat.h"
 #include "styles/style_chat_helpers.h"
@@ -397,7 +398,7 @@ void FieldHeader::init() {
 	) | rpl::on_next([=] {
 		Painter p(this);
 		p.setInactive(_show->paused(Window::GifPauseReason::Any));
-		p.fillRect(rect(), st::historyComposeAreaBg);
+		// Aethergram: the header lies on the compose pill's glass.
 
 		const auto position = st::historyReplyIconPosition;
 		if (_suggestOptions) {
@@ -5821,7 +5822,8 @@ void ComposeControls::paintBackground(QPainter &p, QRect full, QRect clip) {
 		}
 		p.drawRoundedRect(full, _st.radius, _st.radius);
 	} else {
-		p.fillRect(clip, _st.bg);
+		// Aethergram: in a chat the compose area is a glass pill.
+		Aether::PaintGlass(p, full, Aether::kPillRadius);
 	}
 }
 

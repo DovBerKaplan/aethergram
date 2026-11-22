@@ -68,6 +68,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "apiwrap.h"
 #include "api/api_chat_participants.h"
 #include "styles/style_window.h"
+#include "aether/aether_surface.h"
 #include "styles/style_dialogs.h"
 #include "styles/style_chat.h"
 #include "styles/style_info.h"
@@ -538,7 +539,15 @@ void TopBarWidget::paintEvent(QPaintEvent *e) {
 		: -st::topBarHeight;
 	const auto slidingTop = std::max(selectedButtonsTop, searchFieldTop);
 
-	p.fillRect(QRect(0, 0, width(), st::topBarHeight), st::topBarBg);
+	// Aethergram: a glass pill resting in the chat, not a strip across it.
+	const auto pill = QRect(0, 0, width(), st::topBarHeight);
+	Aether::PaintGlass(p, pill, Aether::kPillRadius);
+	p.setClipPath(Aether::RoundedPath(
+		QRectF(pill),
+		Aether::kPillRadius,
+		Aether::kPillRadius,
+		Aether::kPillRadius,
+		Aether::kPillRadius));
 	if (slidingTop < 0) {
 		p.translate(0, slidingTop + st::topBarHeight);
 		paintTopBar(p);
@@ -1326,7 +1335,7 @@ void TopBarWidget::finishAnimating() {
 void TopBarWidget::setAnimatingMode(bool enabled) {
 	if (_animatingMode != enabled) {
 		_animatingMode = enabled;
-		setAttribute(Qt::WA_OpaquePaintEvent, !_animatingMode);
+		// Aethergram: the bar is a rounded pill, its corners see through.
 		finishAnimating();
 	} else if (!enabled) {
 		finishAnimating();

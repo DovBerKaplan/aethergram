@@ -14,6 +14,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/painter.h"
 #include "ui/style/style_core.h"
 #include "styles/palette.h"
+#include "styles/style_widgets.h"
 
 #include <QtGui/QLinearGradient>
 #include <QtGui/QPainterPath>
@@ -54,14 +55,18 @@ const QPixmap &GrainTile() {
 }
 
 constexpr auto kGrainOpacity = 0.04;   // Tokens.material.grainOpacity
+constexpr auto kGrainOpacityLight = 0.025; // the same noise reads louder on light glass
+
+[[nodiscard]] bool Dark() {
+	return st::windowBg->c.lightnessF() < 0.5;
+}
 
 // The rim, as Theme.qml makes it for a chosen colour: that hue, light and
 // faint on dark glass, a little stronger on the light one.
 QColor RimColor() {
 	const auto accent = st::windowBgActive->c;
 	const auto hue = accent.hslHueF();
-	const auto dark = st::windowBg->c.lightnessF() < 0.5;
-	return dark
+	return Dark()
 		? QColor::fromHslF(std::max(0.f, float(hue)), 0.18, 0.67, 0.26)
 		: QColor::fromHslF(std::max(0.f, float(hue)), 0.62, 0.80, 0.34);
 }
@@ -174,9 +179,10 @@ void PaintSheen(QPainter &p, const QRect &rect, const QPainterPath &path) {
 	p.save();
 	p.setRenderHint(QPainter::Antialiasing, true);
 	p.setClipPath(path, Qt::IntersectClip);
-	// bodyTop is about four points of lightness above bodyBottom.
+	// bodyTop is about four points of lightness above bodyBottom. On light
+	// glass a faint white is lost, so the top is lifted more there.
 	auto body = QLinearGradient(rect.topLeft(), rect.bottomLeft());
-	body.setColorAt(0., QColor(255, 255, 255, 14));
+	body.setColorAt(0., QColor(255, 255, 255, Dark() ? 14 : 70));
 	body.setColorAt(1., QColor(255, 255, 255, 0));
 	p.fillRect(rect, body);
 	p.restore();
@@ -186,7 +192,8 @@ void PaintGrain(QPainter &p, const QRect &rect, const QPainterPath &path) {
 	p.save();
 	p.setRenderHint(QPainter::Antialiasing, true);
 	p.setClipPath(path, Qt::IntersectClip);
-	p.setOpacity(p.opacity() * kGrainOpacity);
+	p.setOpacity(p.opacity()
+		* (Dark() ? kGrainOpacity : kGrainOpacityLight));
 	p.drawTiledPixmap(rect, GrainTile());
 	p.restore();
 }
@@ -210,6 +217,44 @@ void PaintMaterial(QPainter &p, const QRect &rect, int radius) {
 	PaintSheen(p, rect, path);
 	PaintGrain(p, rect, path);
 	PaintRim(p, path);
+}
+
+QColor GlassColor() {
+	// A card inside the chat: the window colour, a little see-through, so
+	// the chat's backdrop is felt under the header and the compose pill.
+	auto result = st::windowBg->c;
+	result.setAlphaF(Dark() ? 0.82f : 0.84f);
+	return result;
+}
+
+void PaintGlass(QPainter &p, const QRect &rect, int radius) {
+	const auto path = RoundedPath(
+		QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5),
+		radius,
+		radius,
+		radius,
+		radius);
+	p.save();
+	auto hq = PainterHighQualityEnabler(p);
+	p.setPen(Qt::NoPen);
+	p.fillPath(path, GlassColor());
+	p.restore();
+	PaintSheen(p, rect, path);
+	PaintGrain(p, rect, path);
+	PaintRim(p, path);
+}
+
+const style::FlatButton &GlassButton(const style::FlatButton &base) {
+	static auto copies = base::flat_map<
+		const style::FlatButton*,
+		std::unique_ptr<style::FlatButton>>();
+	auto &copy = copies[&base];
+	if (!copy) {
+		copy = std::make_unique<style::FlatButton>(base);
+		copy->bgColor = st::transparent;
+		copy->overBgColor = st::transparent;
+	}
+	return *copy;
 }
 
 QColor FieldColor() {

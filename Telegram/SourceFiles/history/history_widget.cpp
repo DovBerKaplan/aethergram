@@ -218,6 +218,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_boxes.h"
 #include "styles/style_chat.h"
 #include "styles/style_window.h"
+#include "aether/aether_surface.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_info.h"
 #include "styles/style_iv.h"
@@ -227,6 +228,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QMimeData>
 
 namespace {
+
+constexpr auto kAetherBarsGap = 6; // between the header and the bars' card
 
 constexpr auto kMessagesPerPageFirst = 30;
 constexpr auto kMessagesPerPage = 50;
@@ -310,20 +313,20 @@ HistoryWidget::HistoryWidget(
 , _unblock(
 	this,
 	tr::lng_unblock_button(tr::now, tr::upper),
-	st::historyUnblock)
+	Aether::GlassButton(st::historyUnblock))
 , _botStart(
 	this,
 	tr::lng_bot_start(tr::now, tr::upper),
-	st::historyComposeButton)
+	Aether::GlassButton(st::historyComposeButton))
 , _joinChannel(
 	this,
 	tr::lng_profile_join_channel(tr::now, tr::upper),
-	st::historyComposeButton)
+	Aether::GlassButton(st::historyComposeButton))
 , _muteUnmute(
 	this,
 	tr::lng_channel_mute(tr::now, tr::upper),
-	st::historyComposeButton)
-, _reportMessages(this, QString(), st::historyComposeButton)
+	Aether::GlassButton(st::historyComposeButton))
+, _reportMessages(this, QString(), Aether::GlassButton(st::historyComposeButton))
 , _attachToggle(this, st::historyAttach)
 , _tabbedSelectorToggle(this, st::historyAttachEmoji)
 , _botKeyboardShow(this, st::historyBotKeyboardShow)
@@ -392,6 +395,15 @@ HistoryWidget::HistoryWidget(
 	_topBar->setVisualTabOrder(true);
 	_topBars->setVisualTabOrder(true);
 	_muteUnmute->setVisualTabOrder(true);
+
+	// Aethergram: the pinned message, the requests, the call and the
+	// translate bars lie together on one glass card.
+	_topBars->paintRequest() | rpl::on_next([=] {
+		if (_topBars->height() > 0) {
+			auto p = QPainter(_topBars.get());
+			Aether::PaintGlass(p, _topBars->rect(), Aether::kPillRadius);
+		}
+	}, _topBars->lifetime());
 
 	session().downloaderTaskFinished() | rpl::on_next([=] {
 		update();
@@ -6649,9 +6661,9 @@ void HistoryWidget::mouseMoveEvent(QMouseEvent *e) {
 void HistoryWidget::updateOverStates(QPoint pos) {
 	const auto isReadyToForward = readyToForward();
 	const auto detailsRect = QRect(
-		0,
+		Aether::kGap,
 		_field->y() - st::historySendPadding - st::historyReplyHeight,
-		width() - _fieldBarCancel->width(),
+		width() - 2 * Aether::kGap - _fieldBarCancel->width(),
 		st::historyReplyHeight);
 	const auto hasWebPage = !!_previewDrawPreview;
 	const auto inDetails = detailsRect.contains(pos)
@@ -7393,7 +7405,7 @@ void HistoryWidget::showMembersDropdown() {
 		_membersDropdown->resizeToWidth(st::membersInnerWidth);
 
 		_membersDropdown->setMaxHeight(countMembersDropdownHeightMax());
-		_membersDropdown->moveToLeft(0, _topBar->height());
+		_membersDropdown->moveToLeft(0, _topBar->bottomNoMargins());
 		_membersDropdown->setHiddenCallback([this] {
 			_membersDropdown.destroyDelayed();
 		});
@@ -7668,14 +7680,17 @@ void HistoryWidget::updateSendAsFileGeometry() {
 }
 
 void HistoryWidget::moveFieldControls() {
+	// Aethergram: everything below sits in a pill a gap from the edges.
+	const auto inset = Aether::kGap;
+	const auto areaWidth = width() - 2 * inset;
 	auto keyboardHeight = 0;
-	auto bottom = height();
+	auto bottom = height() - inset;
 	auto maxKeyboardHeight = computeMaxFieldHeight() - fieldHeight();
-	_keyboard->resizeToWidth(width(), maxKeyboardHeight);
+	_keyboard->resizeToWidth(areaWidth, maxKeyboardHeight);
 	if (_kbShown) {
 		keyboardHeight = std::min(_keyboard->height(), maxKeyboardHeight);
 		bottom -= keyboardHeight;
-		_kbScroll->setGeometryToLeft(0, bottom, width(), keyboardHeight);
+		_kbScroll->setGeometryToLeft(inset, bottom, areaWidth, keyboardHeight);
 	}
 
 // (_botMenu) (_attachToggle|_replaceMedia) (_sendAs) ---- _inlineResults ------------------------------ _tabbedPanel ------ _fieldBarCancel
@@ -7683,7 +7698,7 @@ void HistoryWidget::moveFieldControls() {
 // (_botStart|_unblock|_joinChannel|_muteUnmute|_reportMessages)
 
 	auto buttonsBottom = bottom - _attachToggle->height();
-	auto left = st::historySendRight;
+	auto left = inset + st::historySendRight;
 	if (_botMenu) {
 		const auto skip = st::historyBotMenuSkip;
 		_botMenu->moveToLeft(left + skip, buttonsBottom + skip);
@@ -7706,9 +7721,9 @@ void HistoryWidget::moveFieldControls() {
 			left,
 			bottom - fieldHeight() - st::historySendPadding);
 	}
-	auto right = st::historySendRight;
+	auto right = inset + st::historySendRight;
 	_send->moveToRight(right, buttonsBottom); right += _send->width();
-	_voiceRecordBar->moveToLeft(0, bottom - _voiceRecordBar->height());
+	_voiceRecordBar->moveToLeft(inset, bottom - _voiceRecordBar->height());
 	_tabbedSelectorToggle->moveToRight(right, buttonsBottom);
 	_botKeyboardHide->moveToRight(right, buttonsBottom);
 	right += _botKeyboardHide->width();
@@ -7742,24 +7757,24 @@ void HistoryWidget::moveFieldControls() {
 	updateDiscardRichDraftGeometry();
 
 	_fieldBarCancel->moveToRight(
-		0,
+		inset,
 		_field->y() - st::historySendPadding - _fieldBarCancel->height());
 	if (_inlineResults) {
 		_inlineResults->moveBottom(_field->y() - st::historySendPadding);
 	}
 	if (_tabbedPanel) {
-		_tabbedPanel->moveBottomRight(buttonsBottom, width());
+		_tabbedPanel->moveBottomRight(buttonsBottom, width() - inset);
 	}
 	if (_attachBotsMenu) {
 		_attachBotsMenu->moveToLeft(
-			0,
+			inset,
 			buttonsBottom - _attachBotsMenu->height());
 	}
 
 	const auto fullWidthButtonRect = myrtlrect(
-		0,
+		inset,
 		bottom - _botStart->height(),
-		width(),
+		areaWidth,
 		_botStart->height());
 	_botStart->setGeometry(fullWidthButtonRect);
 	_unblock->setGeometry(fullWidthButtonRect);
@@ -7774,6 +7789,7 @@ void HistoryWidget::moveFieldControls() {
 void HistoryWidget::updateFieldSize() {
 	const auto kbShowShown = _history && !_kbShown && _keyboard->hasMarkup();
 	auto fieldWidth = width()
+		- 2 * Aether::kGap
 		- _attachToggle->width()
 		- st::historySendRight
 		- _send->width()
@@ -7807,7 +7823,9 @@ void HistoryWidget::updateFieldSize() {
 	}
 
 	if (_fieldDisabled) {
-		_fieldDisabled->resize(width(), st::historySendSize.height());
+		_fieldDisabled->resize(
+			width() - 2 * Aether::kGap,
+			st::historySendSize.height());
 	}
 	if (_field->width() != fieldWidth) {
 		_field->resize(fieldWidth, _field->height());
@@ -8374,19 +8392,22 @@ void HistoryWidget::resizeEvent(QResizeEvent *e) {
 void HistoryWidget::updateControlsGeometry() {
 	const auto width = this->width();
 
-	_topBar->resizeToWidth(width);
-	_topBar->moveToLeft(0, 0);
+	// Aethergram: the header and the bars under it are glass cards resting
+	// inside the chat, a gap from its edges, not strips across it.
+	_topBar->resizeToWidth(width - 2 * Aether::kGap);
+	_topBar->moveToLeft(Aether::kGap, Aether::kGap);
 
 	const auto tabsLeftSkip = _subsectionTabs
 		? _subsectionTabs->leftSkip()
 		: 0;
-	const auto innerWidth = width - tabsLeftSkip;
+	const auto innerWidth = width - tabsLeftSkip - 2 * Aether::kGap;
 
-	_voiceRecordBar->resizeToWidth(width);
+	_voiceRecordBar->resizeToWidth(width - 2 * Aether::kGap);
 
 	moveFieldControls();
 
-	_topBars->move(tabsLeftSkip, _topBar->bottomNoMargins()
+	_topBars->move(tabsLeftSkip + Aether::kGap, _topBar->bottomNoMargins()
+		+ kAetherBarsGap
 		+ (_subsectionTabs ? _subsectionTabs->topSkip() : 0));
 	const auto groupCallTop = 0;
 	if (_groupCallBar) {
@@ -8433,12 +8454,12 @@ void HistoryWidget::updateControlsGeometry() {
 	if (_businessBotStatus) {
 		_businessBotStatus->bar().move(tabsLeftSkip, businessBotTop);
 	}
-	const auto scrollAreaTop = _topBars->y()
-		+ businessBotTop
+	const auto barsHeight = businessBotTop
 		+ (_businessBotStatus ? _businessBotStatus->bar().height() : 0);
-	_topBars->resize(
-		innerWidth,
-		scrollAreaTop - _topBars->y() + st::lineWidth);
+	const auto scrollAreaTop = barsHeight
+		? (_topBars->y() + barsHeight)
+		: (_topBars->y() - kAetherBarsGap);
+	_topBars->resize(innerWidth, barsHeight);
 	if (_scroll->y() != scrollAreaTop || _scroll->x() != tabsLeftSkip) {
 		_scroll->moveToLeft(tabsLeftSkip, scrollAreaTop);
 		if (_autocomplete) {
@@ -8698,6 +8719,7 @@ void HistoryWidget::updateHistoryGeometry(
 		- subsectionTabsTop
 		- (_subsectionTabs ? _subsectionTabs->topSkip() : 0)
 		- (_subsectionTabs ? _subsectionTabs->bottomSkip() : 0);
+	const auto scrollHeightWithoutBars = newScrollHeight;
 	if (_translateBar) {
 		newScrollHeight -= _translateBar->height();
 	}
@@ -8721,6 +8743,9 @@ void HistoryWidget::updateHistoryGeometry(
 	}
 	if (_businessBotStatus) {
 		newScrollHeight -= _businessBotStatus->bar().height();
+	}
+	if (newScrollHeight != scrollHeightWithoutBars) {
+		newScrollHeight -= kAetherBarsGap;
 	}
 	if (isChoosingTheme()) {
 		newScrollHeight -= _chooseTheme->height();
@@ -8748,6 +8773,9 @@ void HistoryWidget::updateHistoryGeometry(
 		if (_kbShown) {
 			newScrollHeight -= _kbScroll->height();
 		}
+	}
+	if (!isChoosingTheme()) {
+		newScrollHeight -= Aether::kGap; // under the compose pill
 	}
 	if (newScrollHeight <= 0) {
 		return;
@@ -9287,7 +9315,7 @@ void HistoryWidget::botCallbackSent(not_null<HistoryItem*> item) {
 int HistoryWidget::computeMaxFieldHeight() const {
 	const auto pinnedBar = visiblePinnedBar();
 	const auto available = height()
-		- _topBar->height()
+		- _topBar->bottomNoMargins()
 		- (_paysStatus ? _paysStatus->bar().height() : 0)
 		- (_contactStatus ? _contactStatus->bar().height() : 0)
 		- (_businessBotStatus ? _businessBotStatus->bar().height() : 0)
@@ -11515,7 +11543,17 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 	}
 	p.setInactive(
 		controller()->isGifPausedAtLeastFor(Window::GifPauseReason::Any));
-	p.fillRect(myrtlrect(0, backy, width(), backh), st::historyReplyBg);
+	// Aethergram: the compose area is a glass pill a gap from the chat's
+	// edges; what is drawn in it is laid out as if it were the whole width.
+	const auto areaWidth = width() - 2 * Aether::kGap;
+	const auto keyboardHeight = (_kbShown && !_kbScroll->isHidden())
+		? _kbScroll->height()
+		: 0;
+	Aether::PaintGlass(
+		p,
+		QRect(Aether::kGap, backy, areaWidth, backh + keyboardHeight),
+		Aether::kPillRadius);
+	p.translate(Aether::kGap, 0);
 
 	const auto media = (!_previewDrawPreview && drawMsgText)
 		? drawMsgText->media()
@@ -11555,7 +11593,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 		st::historyLinkIcon.paint(
 			p,
 			st::historyReplyIconPosition + QPoint(0, backy),
-			width());
+			areaWidth);
 		const auto textTop = backy + st::msgReplyPadding.top();
 		auto previewLeft = st::historyReplySkip;
 
@@ -11568,7 +11606,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 			previewLeft += st::historyReplyPreview + st::msgReplyBarSkip;
 		}
 		p.setPen(st::historyReplyNameFg);
-		const auto elidedWidth = width()
+		const auto elidedWidth = areaWidth
 			- previewLeft
 			- _fieldBarCancel->width()
 			- st::msgReplyPadding.right();
@@ -11590,7 +11628,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 		const auto pausedSpoiler = paused || On(PowerSaving::kChatSpoiler);
 		auto replyLeft = st::historyReplySkip;
 		if (_suggestOptions) {
-			_suggestOptions->paintIcon(p, 0, backy, width());
+			_suggestOptions->paintIcon(p, 0, backy, areaWidth);
 		} else {
 			const auto quoted = _replyTo
 				&& !HistoryView::Reply::ComposePreviewQuote(_replyTo).empty();
@@ -11601,7 +11639,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 				: st::historyReplyIcon).paint(
 					p,
 					st::historyReplyIconPosition + QPoint(0, backy),
-					width());
+					areaWidth);
 		}
 		if (drawMsgText) {
 			if (hasPreview) {
@@ -11642,7 +11680,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 				replyLeft += st::historyReplyPreview + st::msgReplyBarSkip;
 			}
 			if (_suggestOptions) {
-				_suggestOptions->paintLines(p, replyLeft, backy, width());
+				_suggestOptions->paintLines(p, replyLeft, backy, areaWidth);
 			} else {
 				p.setPen(st::historyReplyNameFg);
 				if (_editMsgId) {
@@ -11652,7 +11690,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 						p,
 						replyLeft,
 						backy + st::msgReplyPadding.top(),
-						width()
+						areaWidth
 							- replyLeft
 							- _fieldBarCancel->width()
 							- st::msgReplyPadding.right());
@@ -11664,7 +11702,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 						st::msgReplyPadding.top()
 							+ st::msgServiceNameFont->height
 							+ backy),
-					.availableWidth = width()
+					.availableWidth = areaWidth
 						- replyLeft
 						- _fieldBarCancel->width()
 						- st::msgReplyPadding.right(),
@@ -11686,7 +11724,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 					+ st::msgDateFont->ascent,
 				st::msgDateFont->elided(
 					tr::lng_profile_loading(tr::now),
-					width()
+					areaWidth
 						- replyLeft
 						- _fieldBarCancel->width()
 						- st::msgReplyPadding.right()));
@@ -11694,15 +11732,15 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 	} else if (hasForward) {
 		st::historyForwardIcon.paint(
 			p,
-			st::historyReplyIconPosition + QPoint(0, backy), width());
+			st::historyReplyIconPosition + QPoint(0, backy), areaWidth);
 		const auto x = st::historyReplySkip;
-		const auto available = width()
+		const auto available = areaWidth
 			- x
 			- _fieldBarCancel->width()
 			- st::msgReplyPadding.right();
-		_forwardPanel->paint(p, x, backy, available, width());
+		_forwardPanel->paint(p, x, backy, available, areaWidth);
 	} else if (_suggestOptions) {
-		_suggestOptions->paintBar(p, 0, backy, width());
+		_suggestOptions->paintBar(p, 0, backy, areaWidth);
 	}
 }
 
@@ -11720,7 +11758,7 @@ void HistoryWidget::paintEditHeader(
 	p.drawTextLeft(
 		left,
 		top + st::msgReplyPadding.top(),
-		width(),
+		width() - 2 * Aether::kGap,
 		tr::lng_edit_message(tr::now));
 
 	if (!_replyEditMsg
@@ -11808,6 +11846,19 @@ void HistoryWidget::paintEvent(QPaintEvent *e) {
 			|| _suggestOptions) {
 			if (!isSearching()) {
 				drawField(p, clip);
+			}
+		}
+		for (const auto button : {
+				_unblock.data(),
+				_botStart.data(),
+				_joinChannel.data(),
+				_muteUnmute.data(),
+				_reportMessages.data() }) {
+			if (!button->isHidden()) {
+				Aether::PaintGlass(
+					p,
+					button->geometry(),
+					Aether::kPillRadius);
 			}
 		}
 	} else {

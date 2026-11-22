@@ -32,6 +32,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/buttons.h"
 #include "window/section_widget.h"
 #include "window/window_session_controller.h"
+#include "aether/aether_surface.h"
 #include "styles/style_chat.h"
 #include "styles/style_chat_helpers.h"
 
@@ -48,6 +49,13 @@ BottomControls::BottomControls(
 , _topic(descriptor.topic)
 , _sublist(descriptor.sublist)
 , _mode(descriptor.mode) {
+	// Aethergram: the buttons lie on a glass pill, like the compose area.
+	paintRequest() | rpl::on_next([=] {
+		if (!_aboutHiddenAuthor && height() > 0) {
+			auto p = QPainter(this);
+			Aether::PaintGlass(p, rect(), Aether::kPillRadius);
+		}
+	}, lifetime());
 	setupButtons();
 	setupOpenChatButton();
 	setupAboutHiddenAuthor();
@@ -229,23 +237,23 @@ void BottomControls::setupButtons() {
 		_unblock = std::make_unique<Ui::FlatButton>(
 			this,
 			tr::lng_unblock_button(tr::now, tr::upper),
-			st::historyUnblock);
+			Aether::GlassButton(st::historyUnblock));
 		_botStart = std::make_unique<Ui::FlatButton>(
 			this,
 			tr::lng_bot_start(tr::now, tr::upper),
-			st::historyComposeButton);
+			Aether::GlassButton(st::historyComposeButton));
 		_joinChannel = std::make_unique<Ui::FlatButton>(
 			this,
 			tr::lng_profile_join_channel(tr::now, tr::upper),
-			st::historyComposeButton);
+			Aether::GlassButton(st::historyComposeButton));
 		_muteUnmute = std::make_unique<Ui::FlatButton>(
 			this,
 			tr::lng_channel_mute(tr::now, tr::upper),
-			st::historyComposeButton);
+			Aether::GlassButton(st::historyComposeButton));
 		_reportMessages = std::make_unique<Ui::FlatButton>(
 			this,
 			QString(),
-			st::historyComposeButton);
+			Aether::GlassButton(st::historyComposeButton));
 		_unblock->hide();
 		_botStart->hide();
 		_joinChannel->hide();
@@ -279,7 +287,7 @@ void BottomControls::setupButtons() {
 		_joinGroup = std::make_unique<Ui::FlatButton>(
 			this,
 			QString(),
-			st::historyComposeButton);
+			Aether::GlassButton(st::historyComposeButton));
 		_joinGroup->hide();
 		_joinGroup->setClickedCallback([=] {
 			_actionRequests.fire(BottomControlsAction::JoinGroup);

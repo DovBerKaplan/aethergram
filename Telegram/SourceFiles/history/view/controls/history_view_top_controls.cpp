@@ -43,6 +43,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/chat/requests_bar.h"
 #include "ui/chat/sponsored_message_bar.h"
 #include "ui/wrap/slide_wrap.h"
+#include "aether/aether_surface.h"
 #include "ui/widgets/buttons.h"
 #include "ui/widgets/elastic_scroll.h"
 #include "ui/widgets/popup_menu.h"
@@ -98,6 +99,16 @@ TopControls::TopControls(
 , _topBars(std::make_unique<Ui::RpWidget>(_wrap.get())) {
 	_topBars->show();
 	_wrap->show();
+	// Aethergram: the bars lie together on one glass card.
+	_wrap->paintRequest() | rpl::on_next([=] {
+		if (_height.current() > 0) {
+			auto p = QPainter(_wrap.get());
+			Aether::PaintGlass(
+				p,
+				QRect(0, 0, _width, _height.current()),
+				Aether::kPillRadius);
+		}
+	}, _wrap->lifetime());
 	setupTranslateBar();
 	rebuildModeSensitiveBars();
 	_history->owner().itemRemoved(
@@ -1197,6 +1208,7 @@ void TopControls::updateLayout() {
 	_topBars->resize(_width, top + st::lineWidth);
 	_wrap->resize(_width, top + st::lineWidth);
 	_height = top;
+	_wrap->update();
 }
 
 void TopControls::updateZOrder() {

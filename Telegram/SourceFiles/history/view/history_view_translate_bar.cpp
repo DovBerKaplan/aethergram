@@ -288,12 +288,7 @@ void TranslateBar::setup(not_null<History*> history) {
 	};
 	const auto button = static_cast<Ui::AbstractButton*>(_wrap.entity());
 	button->resize(0, st::historyTranslateBarHeight);
-	button->setAttribute(Qt::WA_OpaquePaintEvent);
-
-	button->paintRequest(
-	) | rpl::on_next([=](QRect clip) {
-		QPainter(button).fillRect(clip, st::historyComposeButtonBg);
-	}, button->lifetime());
+	// Aethergram: the bar lies on the glass card its parent paints.
 
 	button->setClickedCallback([=] {
 		translateTo(history->translatedTo() ? LanguageId() : _to.current());

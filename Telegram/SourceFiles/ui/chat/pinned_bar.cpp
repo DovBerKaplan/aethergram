@@ -37,11 +37,7 @@ PinnedBar::PinnedBar(
 		return (shown == _shadow->isHidden());
 	}));
 
-	_wrap.entity()->paintRequest(
-	) | rpl::on_next([=](QRect clip) {
-		QPainter(_wrap.entity()).fillRect(clip, st::historyPinnedBg);
-	}, lifetime());
-	_wrap.setAttribute(Qt::WA_OpaquePaintEvent);
+	// Aethergram: the bar lies on the glass card its parent paints.
 
 	if (customEmojiPausedChanges) {
 		std::move(

@@ -132,6 +132,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat_helpers.h"
 #include "styles/style_info.h"
 #include "styles/style_window.h"
+#include "aether/aether_surface.h"
 #include "styles/style_boxes.h"
 #include "styles/style_layers.h"
 
@@ -147,6 +148,7 @@ enum class SendPermission {
 	Files,
 };
 
+constexpr auto kAetherBarsGap = 6; // between the header and the bars' card
 constexpr auto kShowMembersDropdownTimeoutMs = 300;
 constexpr auto kScrollToVoiceAfterScrolledMs = crl::time(1000);
 constexpr auto kPsaAboutPrefix = "cloud_lng_about_psa_";
@@ -4528,7 +4530,7 @@ void ChatWidget::resizeEvent(QResizeEvent *e) {
 	if (!width() || !height()) {
 		return;
 	}
-	_composeControls->resizeToWidth(width());
+	_composeControls->resizeToWidth(width() - 2 * Aether::kGap);
 	recountChatWidth();
 	updateControlsGeometry();
 }
@@ -4550,7 +4552,10 @@ void ChatWidget::updateControlsGeometry() {
 		: _scroll->scrollTop()
 		? base::make_optional(takeTopDelta() + _scrollTopDelta)
 		: 0;
-	_topBar->resizeToWidth(contentWidth);
+	// Aethergram: the header and the bars under it are glass cards resting
+	// inside the chat, a gap from its edges.
+	_topBar->resizeToWidth(contentWidth - 2 * Aether::kGap);
+	_topBar->moveToLeft(Aether::kGap, Aether::kGap);
 	_topBarShadow->resize(contentWidth, st::lineWidth);
 	const auto tabsLeftSkip = _subsectionTabs
 		? _subsectionTabs->leftSkip()
@@ -4562,14 +4567,23 @@ void ChatWidget::updateControlsGeometry() {
 	const auto subsectionTabsTop = _topBar->bottomNoMargins();
 	const auto topControlsTop = subsectionTabsTop
 		+ (_subsectionTabs ? _subsectionTabs->topSkip() : 0);
-	_topControls->move(tabsLeftSkip, topControlsTop);
-	_topControls->resizeToWidth(innerWidth);
-	const auto top = topControlsTop + _topControls->height();
+	_topControls->move(
+		tabsLeftSkip + Aether::kGap,
+		topControlsTop + kAetherBarsGap);
+	_topControls->resizeToWidth(innerWidth - 2 * Aether::kGap);
+	const auto top = _topControls->height()
+		? (topControlsTop + kAetherBarsGap + _topControls->height())
+		: topControlsTop;
 
-	auto bottom = height();
+	// Aethergram: the compose pill rests a gap above the chat's bottom.
+	auto bottom = height() - Aether::kGap;
 	const auto bottomHeight = _bottom->contentHeight();
 	if (bottomHeight > 0) {
-		_bottom->setGeometry(0, bottom - bottomHeight, width(), bottomHeight);
+		_bottom->setGeometry(
+			Aether::kGap,
+			bottom - bottomHeight,
+			width() - 2 * Aether::kGap,
+			bottomHeight);
 		bottom -= bottomHeight;
 	}
 	if (isChoosingTheme()) {
@@ -4595,9 +4609,9 @@ void ChatWidget::updateControlsGeometry() {
 				_keyboard->height(),
 				maxKbHeight);
 			_kbScroll->setGeometry(
-				tabsLeftSkip,
+				tabsLeftSkip + Aether::kGap,
 				bottom - kbHeight,
-				innerWidth,
+				innerWidth - 2 * Aether::kGap,
 				kbHeight);
 			bottom -= kbHeight;
 		} else {
@@ -4639,7 +4653,7 @@ void ChatWidget::updateControlsGeometry() {
 		}
 		updateInnerVisibleArea();
 	}
-	_composeControls->move(0, composeTop);
+	_composeControls->move(Aether::kGap, composeTop);
 	_composeControls->setAutocompleteBoundingRect(_scroll->geometry());
 	if (_supportAutocomplete) {
 		_supportAutocomplete->setBoundings(_scroll->geometry());
@@ -4653,7 +4667,7 @@ void ChatWidget::updateControlsGeometry() {
 	_cornerButtons.updatePositions();
 	_pullToNext->updateGeometry();
 	if (_membersDropdown) {
-		_membersDropdown->moveToLeft(0, _topBar->height());
+		_membersDropdown->moveToLeft(0, _topBar->bottomNoMargins());
 		_membersDropdown->setMaxHeight(countMembersDropdownHeightMax());
 	}
 }
@@ -4683,9 +4697,8 @@ void ChatWidget::paintEvent(QPaintEvent *e) {
 		return;
 	}
 
-	const auto aboveHeight = _topBar->height();
-	const auto bg = e->rect().intersected(
-		QRect(0, aboveHeight, width(), height() - aboveHeight));
+	// Aethergram: the header floats, so the backdrop runs behind it too.
+	const auto bg = e->rect();
 	SectionWidget::PaintBackground(controller(), _theme.get(), this, bg);
 
 	if (_suggestOptions && !_bottom->isButtonActive()) {

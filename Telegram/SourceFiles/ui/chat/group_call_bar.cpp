@@ -119,11 +119,7 @@ GroupCallBar::GroupCallBar(
 	_wrap.hide(anim::type::instant);
 	_shadow->hide();
 
-	_wrap.entity()->paintRequest(
-	) | rpl::on_next([=](QRect clip) {
-		QPainter(_wrap.entity()).fillRect(clip, st::historyPinnedBg);
-	}, lifetime());
-	_wrap.setAttribute(Qt::WA_OpaquePaintEvent);
+	// Aethergram: the bar lies on the glass card its parent paints.
 
 	auto copy = std::move(
 		content

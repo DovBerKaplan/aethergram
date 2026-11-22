@@ -153,7 +153,6 @@ void FinalizeSetBotPhotoFirstOpenState(not_null<PeerData*> peer) {
 	raw->paintRequest(
 	) | rpl::on_next([=, &icon] {
 		auto p = QPainter(raw);
-		p.fillRect(raw->rect(), st::historyContactStatusButton.bgColor);
 		raw->paintRipple(p, 0, 0);
 		icon.paintInCenter(p, raw->rect());
 	}, raw->lifetime());
@@ -295,7 +294,10 @@ void ContactStatus::BgButton::onStateChanged(
 void ContactStatus::BgButton::paintEvent(QPaintEvent *e) {
 	QPainter p(this);
 
-	p.fillRect(e->rect(), isOver() ? _st.overBgColor : _st.bgColor);
+	// Aethergram: the bar lies on a glass card; only a hover shows.
+	if (isOver()) {
+		p.fillRect(e->rect(), _st.overBgColor);
+	}
 	paintRipple(p, 0, 0);
 }
 
@@ -368,7 +370,6 @@ ContactStatus::Bar::Bar(
 	_emojiStatusInfo->paintRequest(
 	) | rpl::on_next([=, raw = _emojiStatusInfo.data()](QRect clip) {
 		_emojiStatusRepaintScheduled = false;
-		QPainter(raw).fillRect(clip, st::historyComposeButtonBg);
 	}, lifetime());
 }
 

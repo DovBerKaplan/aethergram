@@ -17,6 +17,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <vector>
 
 class QWidget;
+
+namespace style {
+struct FlatButton;
+} // namespace style
 class QPainter;
 class QPainterPath;
 
@@ -40,6 +44,18 @@ void PaintRim(QPainter &p, const QPainterPath &path);
 
 // The same for a plain rounded rectangle.
 void PaintMaterial(QPainter &p, const QRect &rect, int radius);
+
+// A card that floats inside the chat (the header, the bars under it, the
+// compose pill): a body of see-through window colour, then the material.
+[[nodiscard]] QColor GlassColor();
+void PaintGlass(QPainter &p, const QRect &rect, int radius);
+
+constexpr auto kPillRadius = 16; // the cards inside the chat
+
+// A full width button at a chat's bottom ("Join", "Mute"), drawn on the
+// glass its parent paints, so with no fill of its own.
+[[nodiscard]] const style::FlatButton &GlassButton(
+	const style::FlatButton &base);
 
 // A rounded rectangle with a radius of its own at each corner.
 [[nodiscard]] QPainterPath RoundedPath(
