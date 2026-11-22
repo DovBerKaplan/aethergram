@@ -2002,13 +2002,20 @@ void InnerWidget::paintPeerSearchResult(
 		not_null<const PeerSearchResult*> result,
 		const Ui::PaintContext &context) {
 	QRect fullRect(0, 0, context.width, st::dialogsRowHeight);
-	p.fillRect(
-		fullRect,
-		(context.active
+	// Aethergram: like the chat rows, the active or hovered one is a
+	// rounded chip inset from the card's edges, not a bar across it.
+	p.fillRect(fullRect, currentBg());
+	if (context.active || context.selected) {
+		auto hq = PainterHighQualityEnabler(p);
+		p.setPen(Qt::NoPen);
+		p.setBrush(context.active
 			? st::dialogsBgActive
-			: context.selected
-			? st::dialogsBgOver
-			: currentBg()));
+			: st::dialogsBgOver);
+		p.drawRoundedRect(
+			fullRect.marginsRemoved(QMargins(8, 2, 8, 2)),
+			12.,
+			12.);
+	}
 	if (!context.active) {
 		result->row.paintRipple(p, 0, 0, context.width);
 	}

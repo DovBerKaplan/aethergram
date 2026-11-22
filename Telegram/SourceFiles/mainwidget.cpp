@@ -2463,6 +2463,8 @@ void MainWidget::orderWidgets() {
 		_player->entity()->raiseDropdowns();
 	}
 	if (_hider) _hider->raise();
+	// Aethergram: the shelves' corners, rim and grain stay on top.
+	Aether::RaiseShelves(this);
 }
 
 QPixmap MainWidget::grabForShowAnimation(const Window::SectionSlideParams &params) {

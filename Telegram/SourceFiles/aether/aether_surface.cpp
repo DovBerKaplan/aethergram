@@ -224,6 +224,14 @@ QColor FieldColor() {
 	return result;
 }
 
+void RaiseShelves(not_null<QWidget*> host) {
+	if (const auto cutouts = host->findChild<QWidget*>(
+			u"aetherCutouts"_q,
+			Qt::FindDirectChildrenOnly)) {
+		cutouts->raise();
+	}
+}
+
 void SetShelves(not_null<QWidget*> host, std::vector<Shelf> shelves) {
 	// (Not findChild<Cutouts*>: that wants Q_OBJECT, which these widgets
 	// do not use; the name is ours alone, so the cast is safe.)

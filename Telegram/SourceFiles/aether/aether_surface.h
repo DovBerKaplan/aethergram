@@ -57,6 +57,10 @@ struct Shelf {
 	bool grain = true;
 };
 
+// Puts the shelves' overlay back on top. Telegram re-orders a window's
+// children whenever a chat opens, which would otherwise bury it.
+void RaiseShelves(not_null<QWidget*> host);
+
 // Tells `host` where its shelves are: the field's rounded cut-outs are drawn
 // over everything inside it, so the children need no rounding of their own.
 void SetShelves(not_null<QWidget*> host, std::vector<Shelf> shelves);
