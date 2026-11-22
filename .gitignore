@@ -74,3 +74,8 @@ settings.local.json
 
 # Generated changelog page (built by CI, deployed to GitHub Pages)
 /docs/changelog/
+
+# Aethergram: local build inputs/outputs; api.env holds credentials, keep it out of git
+/api.env
+/out/
+/.ccache/
