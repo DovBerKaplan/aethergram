@@ -68,7 +68,7 @@ QColor RimColor() {
 	const auto hue = accent.hslHueF();
 	return Dark()
 		? QColor::fromHslF(std::max(0.f, float(hue)), 0.18, 0.67, 0.26)
-		: QColor::fromHslF(std::max(0.f, float(hue)), 0.62, 0.80, 0.34);
+		: QColor::fromHslF(std::max(0.f, float(hue)), 0.30, 0.50, 0.40);
 }
 
 // Paints the field over everything below it except the shelves' insides, so
@@ -126,6 +126,24 @@ protected:
 		p.setCompositionMode(QPainter::CompositionMode_Source);
 		p.fillPath(outside, FieldColor());
 		p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+		if (!Dark()) {
+			// On a light field white shelves need a soft shadow to rest
+			// on; a dark one gets its depth from the glass.
+			p.save();
+			p.setClipPath(outside);
+			p.setBrush(Qt::NoBrush);
+			for (const auto &shelf : _shelves) {
+				for (auto i = 1; i <= 9; ++i) {
+					const auto f = 1. - i / 10.;
+					p.setPen(QPen(QColor(40, 50, 80, int(26 * f * f)), 2.));
+					p.drawRoundedRect(
+						QRectF(shelf.rect).adjusted(-i, -i + 2, i, i + 2),
+						kRadius + i,
+						kRadius + i);
+				}
+			}
+			p.restore();
+		}
 		for (const auto &shelf : _shelves) {
 			const auto path = RoundedPath(
 				QRectF(shelf.rect).adjusted(0.5, 0.5, -0.5, -0.5),
@@ -241,7 +259,7 @@ QColor GlassColor() {
 	const auto hue = std::max(0.f, float(st::windowBgActive->c.hslHueF()));
 	return Dark()
 		? QColor::fromHslF(hue, 0.11f, 0.23f, 0.66f)
-		: QColor::fromHslF(hue, 0.25f, 0.96f, 0.80f);
+		: QColor::fromHslF(hue, 0.55f, 0.985f, 0.90f);
 }
 
 void PaintGlass(QPainter &p, const QRect &rect, int radius) {
@@ -280,8 +298,8 @@ QColor FieldColor() {
 	const auto hue = std::max(0.f, float(base.hslHueF()));
 	auto result = (base.lightnessF() < 0.5)
 		? QColor::fromHslF(hue, 0.06f, 0.20f)
-		: QColor::fromHslF(hue, 0.10f, 0.93f);
-	result.setAlphaF((base.lightnessF() < 0.5) ? 0.58f : 0.62f);
+		: QColor::fromHslF(hue, 0.16f, 0.84f);
+	result.setAlphaF((base.lightnessF() < 0.5) ? 0.58f : 0.74f);
 	return result;
 }
 

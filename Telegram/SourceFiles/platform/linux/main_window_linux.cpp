@@ -35,6 +35,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QMimeData>
 #include <QtGui/QWindow>
 #include <QtWidgets/QMenuBar>
+#include <QtCore/QFileSystemWatcher>
+#include <QtCore/QStandardPaths>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QTextEdit>
 
@@ -150,6 +152,26 @@ void MainWindow::updateWindowIcon() {
 	const auto session = sessionController()
 		? &sessionController()->session()
 		: nullptr;
+	// Aethergram: the icon in the accent's colour that aether-accent-sync
+	// keeps up to date; the window follows the file when it is replaced.
+	const auto path = QStandardPaths::writableLocation(
+		QStandardPaths::GenericDataLocation)
+		+ u"/aethergram/aethergram.png"_q;
+	if (!findChild<QFileSystemWatcher*>(u"aetherIconWatch"_q)) {
+		const auto watcher = new QFileSystemWatcher({ path }, this);
+		watcher->setObjectName(u"aetherIconWatch"_q);
+		connect(watcher, &QFileSystemWatcher::fileChanged, this, [=] {
+			if (!watcher->files().contains(path)) {
+				watcher->addPath(path);
+			}
+			updateWindowIcon();
+		});
+	}
+	auto image = QImage(path);
+	if (!image.isNull() && !(session && session->supportMode())) {
+		setWindowIcon(QIcon(QPixmap::fromImage(std::move(image))));
+		return;
+	}
 	setWindowIcon(Window::CreateIcon(session));
 }
 
