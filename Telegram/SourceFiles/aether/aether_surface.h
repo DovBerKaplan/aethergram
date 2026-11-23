@@ -34,8 +34,8 @@ constexpr auto kRadius = 18;   // the shelves' corners
 [[nodiscard]] QColor FieldColor();
 
 // The material, copied from the island's and the console's cards
-// (components/shared/AetherShared/CardSurface.qml): a body that is a shade
-// lighter at the top, the grain picture laid over it at 4%, and a one pixel
+// (components/shared/AetherShared/CardSurface.qml), made flat: a body under
+// an even milky veil, the grain picture laid over it at 4%, and a one pixel
 // rim in the accent's hue. Each is drawn over what is already there, inside
 // `path`, so a rounded shelf or a bubble with its own corners keeps its shape.
 void PaintSheen(QPainter &p, const QRect &rect, const QPainterPath &path);

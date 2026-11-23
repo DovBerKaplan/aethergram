@@ -16,7 +16,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/palette.h"
 #include "styles/style_widgets.h"
 
-#include <QtGui/QLinearGradient>
 #include <QtGui/QPainterPath>
 
 #include <QtCore/QStandardPaths>
@@ -179,12 +178,9 @@ void PaintSheen(QPainter &p, const QRect &rect, const QPainterPath &path) {
 	p.save();
 	p.setRenderHint(QPainter::Antialiasing, true);
 	p.setClipPath(path, Qt::IntersectClip);
-	// bodyTop is about four points of lightness above bodyBottom. On light
-	// glass a faint white is lost, so the top is lifted more there.
-	auto body = QLinearGradient(rect.topLeft(), rect.bottomLeft());
-	body.setColorAt(0., QColor(255, 255, 255, Dark() ? 14 : 70));
-	body.setColorAt(1., QColor(255, 255, 255, 0));
-	p.fillRect(rect, body);
+	// Flat frosted glass: one even milky veil over the body, no gradient
+	// (a top-to-bottom sheen reads as the card darkening towards its foot).
+	p.fillRect(rect, QColor(255, 255, 255, Dark() ? 10 : 46));
 	p.restore();
 }
 
@@ -220,11 +216,15 @@ void PaintMaterial(QPainter &p, const QRect &rect, int radius) {
 }
 
 QColor GlassColor() {
-	// A card inside the chat: the window colour, a little see-through, so
-	// the chat's backdrop is felt under the header and the compose pill.
-	auto result = st::windowBg->c;
-	result.setAlphaF(Dark() ? 0.82f : 0.84f);
-	return result;
+	// The island's own body (Theme.qml, a chosen colour on dark glass:
+	// hsla(hue, .11, .21-.25)), flat, at the middle of its two stops. The
+	// island has KWin's blur behind it and lets a third through; inside the
+	// chat there is only the quiet backdrop, so the body is denser to read
+	// as the same frosted, milky glass.
+	const auto hue = std::max(0.f, float(st::windowBgActive->c.hslHueF()));
+	return Dark()
+		? QColor::fromHslF(hue, 0.11f, 0.23f, 0.66f)
+		: QColor::fromHslF(hue, 0.25f, 0.96f, 0.80f);
 }
 
 void PaintGlass(QPainter &p, const QRect &rect, int radius) {
@@ -239,7 +239,6 @@ void PaintGlass(QPainter &p, const QRect &rect, int radius) {
 	p.setPen(Qt::NoPen);
 	p.fillPath(path, GlassColor());
 	p.restore();
-	PaintSheen(p, rect, path);
 	PaintGrain(p, rect, path);
 	PaintRim(p, path);
 }
