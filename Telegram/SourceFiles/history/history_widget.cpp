@@ -219,6 +219,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat.h"
 #include "styles/style_window.h"
 #include "aether/aether_surface.h"
+#include <QtCore/QTimer>
+#include <QtCore/QLocale>
+#include <QtCore/QDateTime>
 #include "styles/style_chat_helpers.h"
 #include "styles/style_info.h"
 #include "styles/style_iv.h"
@@ -11862,33 +11865,57 @@ void HistoryWidget::paintEvent(QPaintEvent *e) {
 			}
 		}
 	} else {
-		const auto w = 0
-			+ st::msgServiceFont->width(tr::lng_willbe_history(tr::now))
-			+ st::msgPadding.left()
-			+ st::msgPadding.right();
-		const auto h = st::msgServiceFont->height
-			+ st::msgServicePadding.top()
-			+ st::msgServicePadding.bottom();
-		const auto tr = QRect(
-			(width() - w) / 2,
-			st::msgServiceMargin.top() + (height()
-				- fieldHeight()
-				- 2 * st::historySendPadding
-				- h
-				- st::msgServiceMargin.top()
-				- st::msgServiceMargin.bottom()) / 2,
-			w,
-			h);
-		const auto st = controller()->chatStyle();
-		HistoryView::ServiceMessagePainter::PaintBubble(p, st, tr);
-
-		p.setPen(st->msgServiceFg());
-		p.setFont(st::msgServiceFont->f);
-		p.drawTextLeft(
-			tr.left() + st::msgPadding.left(),
-			tr.top() + st::msgServicePadding.top(),
-			width(),
-			tr::lng_willbe_history(tr::now));
+		// Aethergram: nothing chosen yet - a quiet glass card with the time
+		// and the date, in the island's manner, instead of a service chip.
+		const auto now = QDateTime::currentDateTime();
+		const auto timeFont = style::font(52, 0, 0);
+		const auto dateFont = st::normalFont;
+		const auto hintFont = st::msgServiceFont;
+		const auto time = QLocale().toString(now.time(), u"HH:mm"_q);
+		const auto date = QLocale().toString(now.date(), QLocale::LongFormat);
+		const auto hint = tr::lng_willbe_history(tr::now);
+		const auto inner = std::max({
+			timeFont->width(time),
+			dateFont->width(date),
+			hintFont->width(hint) }) + 2 * 28;
+		const auto cardWidth = std::min(inner + 2 * 28, width() - 4 * Aether::kGap);
+		const auto cardHeight = 28 + timeFont->height + 4 + dateFont->height
+			+ 18 + hintFont->height + 28;
+		const auto card = QRect(
+			(width() - cardWidth) / 2,
+			(height() - cardHeight) / 2,
+			cardWidth,
+			cardHeight);
+		Aether::PaintGlass(p, card, Aether::kPillRadius + 6);
+		p.setPen(st::windowFg);
+		p.setFont(timeFont);
+		p.drawText(
+			QRect(card.x(), card.y() + 28, card.width(), timeFont->height),
+			style::al_top,
+			time);
+		p.setFont(dateFont);
+		p.setPen(st::windowSubTextFg);
+		p.drawText(
+			QRect(card.x(), card.y() + 28 + timeFont->height + 4, card.width(), dateFont->height),
+			style::al_top,
+			date);
+		p.setFont(hintFont);
+		p.setPen(st::windowActiveTextFg);
+		p.drawText(
+			QRect(card.x(), card.bottom() - 28 - hintFont->height, card.width(), hintFont->height),
+			style::al_top,
+			hint);
+		if (!findChild<QTimer*>(u"aetherClock"_q)) {
+			const auto clock = new QTimer(this);
+			clock->setObjectName(u"aetherClock"_q);
+			clock->setInterval(20 * 1000);
+			connect(clock, &QTimer::timeout, this, [=] {
+				if (!_list) {
+					update();
+				}
+			});
+			clock->start();
+		}
 	}
 }
 
