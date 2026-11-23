@@ -3,6 +3,49 @@
 Aethergram is an unofficial Telegram client: a fork of tdesktop (v7.4.5)
 restyled for the Aether KDE desktop. It is not affiliated with Telegram.
 
+## What it is
+
+Aethergram dresses like the Aether desktop (<https://github.com/DovBerKaplan/aether-theme>):
+the island bar, the console and the dock. It is not a recolour; the window is
+built the same way.
+
+- **Shelves on a glass field.** The list, the chat and the info panel are rounded
+  cards resting on a translucent field that KWin blurs (the
+  `ext-background-effect` protocol, spoken directly). The chat header, the card
+  of bars under it and the compose row float inside the chat as flat glass pills
+  with the island's grain and a one pixel rim in the accent's hue.
+- **No title bar.** Minimize, maximize and close are drawn as the Aether window
+  decoration draws them, in the corner of the right-hand shelf, on the side
+  `kwinrc` keeps them. The gaps between the shelves move the window.
+  `AETHERGRAM_NATIVE_FRAME=1` brings the desktop's frame back.
+- **Follows the system colour.** The whole palette, the chat background (the
+  user's own desktop wallpaper, quieted), the bot buttons, the file chips and the
+  app icon are derived from the accent and the dark/light mode that the island
+  keeps. `aether-accent-sync` (in aether-theme) writes them to
+  `~/.local/share/aethergram/` and the client reloads them live.
+- **Widgets of the island:** the 44x24 switch, a thick slider, rimmed menus.
+- **Right to left** follows the desktop language (`AETHERGRAM_LAYOUT=ltr|rtl`
+  overrides it).
+- **Session bus.** `org.aether.Aethergram` at `/Aether`, interface
+  `org.aether.Client1`: `Unread`, `UnreadMuted`, `StateChanged`, `Show`, `Hide`
+  (see `docs/THEME-BUS.md` in aether-theme).
+
+## Installing
+
+The palettes, the chat background and the desktop entry come from the
+aether-theme repository:
+
+    git clone https://github.com/DovBerKaplan/aether-theme && cd aether-theme
+    make install-telegram TG=/path/to/aethergram/out/Release/Telegram
+
+## Source layout
+
+Everything Aether-specific is in `Telegram/SourceFiles/aether/` (surfaces and
+shelves, blur, window buttons, language, bus, API credentials) plus small hooks
+in the files it touches. `lib_ui` is a submodule from
+<https://github.com/DovBerKaplan/aethergram-lib_ui> (branch `aether`); the
+upstream version is v7.4.5.
+
 ## Building
 
 One-time, after cloning and after every upstream sync (needs docker and
