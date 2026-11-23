@@ -52,7 +52,15 @@ namespace {
 // margins its own style adds, and has no floating label: the placeholder
 // just gives way to the text.
 [[nodiscard]] bool IsChip(const style::InputField &st) {
-	return (st.borderRadius == 12 && st.border > 0);
+	return (st.borderRadius == 12
+		&& st.border > 0
+		&& st.textBg->c == st::lightButtonBg->c);
+}
+
+// A field that inherited the chip's radius but not its look (no border, or
+// its own background) stays flat, as it was designed.
+[[nodiscard]] bool InheritedRadiusOnly(const style::InputField &st) {
+	return (st.borderRadius == 12) && !IsChip(st);
 }
 
 [[nodiscard]] QMargins ChipPadding(const style::InputField &st) {
@@ -2954,7 +2962,7 @@ void InputField::paintSurrounding(
 		QRect clip,
 		float64 errorDegree,
 		float64 focusedDegree) {
-	if (_st.borderRadius > 0) {
+	if (_st.borderRadius > 0 && !InheritedRadiusOnly(_st)) {
 		paintRoundSurrounding(p, clip, errorDegree, focusedDegree);
 	} else {
 		paintFlatSurrounding(p, clip, errorDegree, focusedDegree);
