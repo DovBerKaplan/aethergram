@@ -47,6 +47,24 @@
 namespace Ui {
 namespace {
 
+// Aethergram: a field drawn as a rounded chip (the default style's) keeps its
+// text a little in from the chip's edge and its lines centred in it, whatever
+// margins its own style adds, and has no floating label: the placeholder
+// just gives way to the text.
+[[nodiscard]] bool IsChip(const style::InputField &st) {
+	return (st.borderRadius == 12 && st.border > 0);
+}
+
+[[nodiscard]] QMargins ChipPadding(const style::InputField &st) {
+	return IsChip(st)
+		? QMargins(14, 17 - st.textMargins.top(), 14, 17 - st.textMargins.bottom())
+		: QMargins();
+}
+
+} // namespace
+
+namespace {
+
 constexpr auto kInstantReplaceRandomId = QTextFormat::UserProperty;
 constexpr auto kInstantReplaceWhatId = QTextFormat::UserProperty + 1;
 constexpr auto kInstantReplaceWithId = QTextFormat::UserProperty + 2;
@@ -2909,9 +2927,12 @@ bool InputField::heightAutoupdated() {
 
 	SendPendingMoveResizeEvents(this);
 
+	const auto chipPadding = ChipPadding(_st);
 	const auto contentHeight = int(std::ceil(document()->size().height()))
 		+ _st.textMargins.top()
 		+ _st.textMargins.bottom()
+		+ chipPadding.top()
+		+ chipPadding.bottom()
 		+ _additionalMargins.top()
 		+ _additionalMargins.bottom();
 	const auto newHeight = std::clamp(contentHeight, _minHeight, _maxHeight);
@@ -3002,7 +3023,9 @@ void InputField::paintEvent(QPaintEvent *e) {
 
 	const auto margins = placeholderPaintMargins();
 
-	if (_st.placeholderScale > 0. && !_placeholderPath.isEmpty()) {
+	if (_st.placeholderScale > 0.
+		&& !IsChip(_st)
+		&& !_placeholderPath.isEmpty()) {
 		auto placeholderShiftDegree = _a_placeholderShifted.value(_placeholderShifted ? 1. : 0.);
 		p.save();
 		p.setClipRect(r);
@@ -4229,18 +4252,6 @@ void InputField::highlightMarkdown() {
 	}
 }
 
-namespace {
-
-// Aethergram: a field drawn as a rounded chip (the default style's) keeps its
-// text a little in from the chip's edge, whatever margins its own style adds.
-[[nodiscard]] QMargins ChipPadding(const style::InputField &st) {
-	return (st.borderRadius == 12 && st.border > 0)
-		? QMargins(14, 0, 14, 0)
-		: QMargins();
-}
-
-} // namespace
-
 QMargins InputField::fullTextMargins() const {
 	const auto skip = int(base::SafeRound(
 		_inner->document()->documentMargin()));
@@ -4293,7 +4304,7 @@ void InputField::startPlaceholderAnimation() {
 		return getTextWithTags().text.size() + _lastPreEditText.size();
 	};
 	const auto placeholderShifted = _forcePlaceholderHidden
-		|| (_focused && _st.placeholderScale > 0.)
+		|| (_focused && _st.placeholderScale > 0. && !IsChip(_st))
 		|| (textLength() > _placeholderAfterSymbols);
 	if (_placeholderShifted != placeholderShifted) {
 		_placeholderShifted = placeholderShifted;
