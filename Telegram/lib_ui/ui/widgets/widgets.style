@@ -1031,13 +1031,13 @@ defaultInputField: InputField {
 	textBgActive: lightButtonBg;
 	textFg: windowFg;
 	textMarkBg: windowBgOver;
-	textMargins: margins(14px, 28px, 14px, 4px);
+	textMargins: margins(0px, 28px, 0px, 4px);
 	textAlign: align(topleft);
 
 	placeholderFg: windowSubTextFg;
 	placeholderFgActive: windowActiveTextFg;
 	placeholderFgError: attentionButtonFg;
-	placeholderMargins: margins(14px, 0px, 14px, 0px);
+	placeholderMargins: margins(0px, 0px, 0px, 0px);
 	placeholderAlign: align(topleft);
 	placeholderScale: 0.9;
 	placeholderShift: -20px;

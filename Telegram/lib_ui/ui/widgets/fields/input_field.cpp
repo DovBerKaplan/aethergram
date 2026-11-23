@@ -4229,10 +4229,23 @@ void InputField::highlightMarkdown() {
 	}
 }
 
+namespace {
+
+// Aethergram: a field drawn as a rounded chip (the default style's) keeps its
+// text a little in from the chip's edge, whatever margins its own style adds.
+[[nodiscard]] QMargins ChipPadding(const style::InputField &st) {
+	return (st.borderRadius == 12 && st.border > 0)
+		? QMargins(14, 0, 14, 0)
+		: QMargins();
+}
+
+} // namespace
+
 QMargins InputField::fullTextMargins() const {
 	const auto skip = int(base::SafeRound(
 		_inner->document()->documentMargin()));
 	return _st.textMargins
+		+ ChipPadding(_st)
 		+ QMargins(skip, skip, skip, 0)
 		+ _additionalMargins
 		+ _customFontMargins;
@@ -6266,7 +6279,10 @@ void InputField::insertFromMimeDataInner(const QMimeData *source) {
 void InputField::resizeEvent(QResizeEvent *e) {
 	refreshPlaceholder(_placeholderFull.current());
 	_inner->setGeometry(rect().marginsRemoved(
-		_st.textMargins + _additionalMargins + _customFontMargins));
+		_st.textMargins
+			+ ChipPadding(_st)
+			+ _additionalMargins
+			+ _customFontMargins));
 	if (_spoilerOverlay) {
 		_spoilerOverlay->setGeometry(_inner->rect());
 	}
@@ -6277,6 +6293,7 @@ void InputField::resizeEvent(QResizeEvent *e) {
 
 void InputField::refreshPlaceholder(const QString &text) {
 	const auto margins = _st.textMargins
+		+ ChipPadding(_st)
 		+ _st.placeholderMargins
 		+ _additionalMargins
 		+ _customFontMargins;
