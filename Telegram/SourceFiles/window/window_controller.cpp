@@ -38,6 +38,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "wallet/wallet_panel.h"
 #include "wallet/wallet_session.h"
 #include "apiwrap.h" // ApiWrap::acceptTerms.
+#include "aether/aether_window.h"
 #include "styles/style_layers.h"
 
 #include <QtGui/QWindow>
@@ -437,7 +438,7 @@ void Controller::showSettings() {
 int Controller::verticalShadowTop() const {
 	return (Platform::NativeTitleRequiresShadow()
 		&& Ui::Platform::NativeWindowFrameSupported()
-		&& Core::App().settings().nativeWindowFrame())
+		&& Aether::NativeFrame())
 		? st::lineWidth
 		: 0;
 }

@@ -10,6 +10,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 // Aethergram: the main window is a quiet field with shelves floating on it,
 // like the island, the dock and the console - not three panels edge to edge.
 
+#include <QtCore/QPoint>
 #include <QtCore/QRect>
 #include <QtGui/QPainterPath>
 #include <QtGui/QColor>
@@ -71,7 +72,17 @@ struct Shelf {
 	// backdrop, the quietest thing on the screen; the grain belongs to the
 	// cards that lie on it (the list, the info panel, the bubbles).
 	bool grain = true;
+	// How far below the shelf's top its header row is centred: the window
+	// buttons line up with it when this shelf is the outermost one.
+	int header = 26;
+	// How far in from the shelf's sides that header row starts (the chat's
+	// header is a pill a gap inside its card).
+	int headerInset = 0;
 };
+
+// Whether `point` (in `host`) is on the field: in the gaps around and
+// between the shelves, not on any of them.
+[[nodiscard]] bool OnField(not_null<QWidget*> host, QPoint point);
 
 // Puts the shelves' overlay back on top. Telegram re-orders a window's
 // children whenever a chat opens, which would otherwise bury it.

@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "aether/aether_surface.h"
 #include "aether/aether_blur.h"
+#include "aether/aether_window.h"
 
 #include "ui/rp_widget.h"
 #include "ui/painter.h"
@@ -83,6 +84,20 @@ public:
 		}, lifetime());
 	}
 
+	[[nodiscard]] bool onField(QPoint point) const {
+		if (!rect().contains(point)) {
+			return false;
+		}
+		for (const auto &shelf : _shelves) {
+			auto inside = QPainterPath();
+			inside.addRoundedRect(QRectF(shelf.rect), kRadius, kRadius);
+			if (inside.contains(point)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	void setShelves(std::vector<Shelf> shelves) {
 		if (sameShelves(shelves)) {
 			return;
@@ -133,7 +148,9 @@ private:
 		}
 		for (auto i = size_t(); i != other.size(); ++i) {
 			if (_shelves[i].rect != other[i].rect
-				|| _shelves[i].grain != other[i].grain) {
+				|| _shelves[i].grain != other[i].grain
+				|| _shelves[i].header != other[i].header
+				|| _shelves[i].headerInset != other[i].headerInset) {
 				return false;
 			}
 		}
@@ -268,11 +285,23 @@ QColor FieldColor() {
 	return result;
 }
 
+bool OnField(not_null<QWidget*> host, QPoint point) {
+	const auto cutouts = static_cast<Cutouts*>(host->findChild<QWidget*>(
+		u"aetherCutouts"_q,
+		Qt::FindDirectChildrenOnly));
+	return cutouts && cutouts->onField(point);
+}
+
 void RaiseShelves(not_null<QWidget*> host) {
 	if (const auto cutouts = host->findChild<QWidget*>(
 			u"aetherCutouts"_q,
 			Qt::FindDirectChildrenOnly)) {
 		cutouts->raise();
+	}
+	if (const auto buttons = host->findChild<QWidget*>(
+			u"aetherWindowButtons"_q,
+			Qt::FindDirectChildrenOnly)) {
+		buttons->raise();
 	}
 }
 
@@ -285,12 +314,18 @@ void SetShelves(not_null<QWidget*> host, std::vector<Shelf> shelves) {
 	if (!cutouts) {
 		cutouts = new Cutouts(host);
 		cutouts->setObjectName(u"aetherCutouts"_q);
-		SetupWindowBlur(host->window());
+		SetupWindowBlur(host);
 	}
 	cutouts->setGeometry(host->rect());
+	PlaceWindowButtons(host, shelves);
 	cutouts->setShelves(std::move(shelves));
 	cutouts->raise();
 	cutouts->show();
+	if (const auto buttons = host->findChild<QWidget*>(
+			u"aetherWindowButtons"_q,
+			Qt::FindDirectChildrenOnly)) {
+		buttons->raise();
+	}
 }
 
 } // namespace Aether

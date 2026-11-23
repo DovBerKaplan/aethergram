@@ -109,6 +109,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_session_controller.h"
 #include "ui/toast/toast.h"
 #include "boxes/sticker_set_box.h"
+#include "aether/aether_window.h"
 #include "styles/style_chat.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_info.h"
@@ -2876,10 +2877,15 @@ void TopBar::updateRightButtonsPosition() {
 	if (width() <= 0) {
 		return;
 	}
-	auto right = 0;
+	// Aethergram: the window buttons may float over this corner. Then they
+	// stand in for the panel's own close (the chat's header toggles it).
+	auto right = Aether::ButtonsReserve(this).right();
 	if (_close) {
+		_close->setVisible(!right);
 		_close->moveToRight(right, 0);
-		right += _close->width();
+		if (!right) {
+			right += _close->width();
+		}
 	}
 	if (_topBarButton) {
 		_topBarButton->moveToRight(right, 0);
@@ -3185,8 +3191,11 @@ void TopBar::setupButtons(
 					controller->hideLayer();
 					controller->hideSpecialLayer();
 				}));
-			widthValue() | rpl::on_next([=] {
-				_close->moveToRight(0, 0);
+			rpl::merge(
+				widthValue() | rpl::to_empty,
+				Aether::ShelvesLaidOut()
+			) | rpl::on_next([=] {
+				updateRightButtonsPosition();
 			}, _close->lifetime());
 		}
 

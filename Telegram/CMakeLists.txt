@@ -140,6 +140,8 @@ PRIVATE
     aether/aether_language.h
     aether/aether_surface.cpp
     aether/aether_surface.h
+    aether/aether_window.cpp
+    aether/aether_window.h
     api/api_attached_stickers.cpp
     api/api_attached_stickers.h
     api/api_authorizations.cpp

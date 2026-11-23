@@ -16,9 +16,10 @@ class QWidget;
 
 namespace Aether {
 
-// Asks the compositor to blur everything behind `window`. Does nothing when
-// the session is not Wayland or the compositor offers no blur (not KDE). It
-// follows the window through its surface being recreated or resized.
-void SetupWindowBlur(not_null<QWidget*> window);
+// Asks the compositor to blur what is behind `area`, a widget in a window.
+// Does nothing when the session is not Wayland or the compositor offers no
+// blur (not KDE). It follows the window through its surface being recreated
+// and the area through being resized or moved.
+void SetupWindowBlur(not_null<QWidget*> area);
 
 } // namespace Aether

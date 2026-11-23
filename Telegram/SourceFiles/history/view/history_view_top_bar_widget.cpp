@@ -67,6 +67,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "support/support_helper.h"
 #include "apiwrap.h"
 #include "api/api_chat_participants.h"
+#include "aether/aether_window.h"
 #include "styles/style_window.h"
 #include "aether/aether_surface.h"
 #include "styles/style_dialogs.h"
@@ -135,6 +136,9 @@ TopBarWidget::TopBarWidget(
 , _onlineUpdater([=] { updateOnlineDisplay(); }) {
 	// Aethergram: the bar is glass over the chat backdrop, so it must not
 	// claim to paint every pixel itself.
+	Aether::ShelvesLaidOut() | rpl::on_next([=] {
+		updateControlsGeometry();
+	}, lifetime());
 
 	_clear->setTextTransform(Ui::RoundButtonTextTransform::ToUpper);
 	_forward->setTextTransform(Ui::RoundButtonTextTransform::ToUpper);
@@ -1151,6 +1155,8 @@ void TopBarWidget::updateInfoButtonVisibility() {
 }
 
 void TopBarWidget::updateControlsGeometry() {
+	// Aethergram: the window buttons may float over a corner of the bar.
+	const auto reserve = Aether::ButtonsReserve(this);
 	if (!_activeChat.key) {
 		return;
 	}
@@ -1235,9 +1241,9 @@ void TopBarWidget::updateControlsGeometry() {
 		_cancelChoose->moveToLeft(_leftTaken, otherButtonsTop);
 		_leftTaken += _cancelChoose->width();
 	} else if (_back->isHidden()) {
-		_leftTaken = st::topBarArrowPadding.right();
+		_leftTaken = reserve.left() + st::topBarArrowPadding.right();
 	} else {
-		_leftTaken = anim::interpolate(
+		_leftTaken = reserve.left() + anim::interpolate(
 			0,
 			(_narrowWidth - _back->width()) / 2,
 			_narrowRatio);
@@ -1289,7 +1295,7 @@ void TopBarWidget::updateControlsGeometry() {
 		updateSearchJumpToDateVisibility();
 	}
 
-	_rightTaken = 0;
+	_rightTaken = reserve.right();
 	if (rootChatsListBar() && _activeChat.key.folder()) {
 		const auto &toggle = st::topBarMenuToggle;
 		const auto narrowLeft = (_narrowWidth - toggle.icon.width()) / 2

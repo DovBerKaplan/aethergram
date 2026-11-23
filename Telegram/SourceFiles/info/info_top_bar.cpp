@@ -26,6 +26,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_session.h"
 #include "data/data_channel.h"
 #include "data/data_user.h"
+#include "aether/aether_window.h"
 #include "styles/style_dialogs.h"
 #include "styles/style_info.h"
 
@@ -44,6 +45,9 @@ TopBar::TopBar(
 		_roundRect.emplace(_st.radius, _st.bg);
 	}
 	setAttribute(Qt::WA_OpaquePaintEvent, !_roundRect);
+	Aether::ShelvesLaidOut() | rpl::on_next([=] {
+		updateControlsGeometry(width());
+	}, lifetime());
 	setSelectedItems(std::move(selectedItems));
 	updateControlsVisibility(anim::type::instant);
 }
@@ -393,7 +397,8 @@ void TopBar::updateControlsGeometry(int newWidth) {
 }
 
 void TopBar::updateDefaultControlsGeometry(int newWidth) {
-	auto right = 0;
+	// Aethergram: the window buttons may float over this corner.
+	auto right = Aether::ButtonsReserve(this).right();
 	for (auto &button : _buttons) {
 		if (!button) {
 			continue;
@@ -482,7 +487,7 @@ void TopBar::updateStoriesGeometry(int newWidth) {
 		return;
 	}
 
-	auto right = 0;
+	auto right = Aether::ButtonsReserve(this).right();
 	for (auto &button : _buttons) {
 		if (!button) {
 			continue;

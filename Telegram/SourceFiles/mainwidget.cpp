@@ -102,6 +102,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_dialogs.h"
 #include "styles/style_chat.h"
 #include "styles/style_window.h"
+#include "styles/style_info.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMimeData>
@@ -2782,8 +2783,15 @@ void MainWidget::updateControlsGeometry() {
 		if (_hider) _hider->setGeometry(0, 0, dialogsWidth, height());
 		// Rough when it is the list that shows; the chat is the backdrop.
 		const auto showingList = _dialogs && !_dialogs->isHidden();
+		// The window buttons line up with the list's search row, or with
+		// the chat's header pill, a gap inside the card.
 		Aether::SetShelves(this, {
-			{ QRect(g, g, shelfWidth, height() - 2 * g), showingList }
+			{
+				.rect = QRect(g, g, shelfWidth, height() - 2 * g),
+				.grain = showingList,
+				.header = showingList ? 26 : (g + st::topBarHeight / 2),
+				.headerInset = showingList ? 0 : g,
+			}
 		});
 	} else {
 		auto thirdSectionWidth = _thirdSection ? _thirdColumnWidth : 0;
@@ -2829,7 +2837,10 @@ void MainWidget::updateControlsGeometry() {
 				thirdSectionWidth - half - g,
 				height() - thirdTop - 2 * g);
 			_thirdSection->setGeometry(rect);
-			shelves.push_back({ rect });
+			shelves.push_back({
+				.rect = rect,
+				.header = st::infoTopBarHeight / 2,
+			});
 		}
 		if (_sideShadow) {
 			_sideShadow->hide();
@@ -2860,8 +2871,11 @@ void MainWidget::updateControlsGeometry() {
 		_history->setGeometryWithTopMoved(mainRect, _contentScrollAddToY);
 		// The chat's card is the backdrop: a rim, no grain.
 		shelves.push_back({
-			QRect(mainLeft, g, mainSectionWidth, height() - 2 * g),
-			false });
+			.rect = QRect(mainLeft, g, mainSectionWidth, height() - 2 * g),
+			.grain = false,
+			.header = g + st::topBarHeight / 2,
+			.headerInset = g,
+		});
 		if (_hider) {
 			_hider->setGeometryToLeft(
 				mainLeft,

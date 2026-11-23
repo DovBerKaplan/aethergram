@@ -221,10 +221,14 @@ constexpr wl_registry_listener kRegistryListener = {
 // surface is (hiding and showing a window recreates it).
 class WindowBlur final : public QObject {
 public:
-	explicit WindowBlur(not_null<QWidget*> widget)
+	WindowBlur(not_null<QWidget*> widget, not_null<QWidget*> area)
 	: QObject(widget)
-	, _widget(widget) {
+	, _widget(widget)
+	, _area(area) {
 		widget->installEventFilter(this);
+		if (area != widget) {
+			area->installEventFilter(this);
+		}
 		apply();
 	}
 
@@ -239,6 +243,7 @@ protected:
 		case QEvent::WinIdChange:
 		case QEvent::PlatformSurface:
 		case QEvent::Resize:
+		case QEvent::Move:
 			apply();
 			break;
 		default: break;
@@ -276,8 +281,12 @@ private:
 				surface);
 		}
 		if (_blur) {
-			// A region over the whole window (an empty one would mean no
-			// effect); the shelves paint over it, the gaps let it through.
+			// A region over the area the shelves lie on (an empty one would
+			// mean no effect): the shelves paint over it, the gaps let it
+			// through, and the frame's shadow around it stays unblurred.
+			const auto area = QRect(
+				_area->mapTo(_widget.get(), QPoint()),
+				_area->size());
 			const auto compositor = reinterpret_cast<wl_proxy*>(
 				native->compositor());
 			if (!compositor) {
@@ -299,10 +308,10 @@ private:
 				nullptr,
 				w.version(region),
 				0,
-				0,
-				0,
-				_widget->width(),
-				_widget->height());
+				area.x(),
+				area.y(),
+				area.width(),
+				area.height());
 			w.marshal(
 				_blur,
 				1, // ext_background_effect_surface_v1.set_blur_region
@@ -335,6 +344,7 @@ private:
 	}
 
 	const not_null<QWidget*> _widget;
+	const not_null<QWidget*> _area;
 	wl_proxy *_surface = nullptr;
 	wl_proxy *_blur = nullptr;
 
@@ -342,7 +352,8 @@ private:
 
 } // namespace
 
-void SetupWindowBlur(not_null<QWidget*> window) {
+void SetupWindowBlur(not_null<QWidget*> area) {
+	const auto window = area->window();
 	if (!::Platform::IsWayland() || !Symbols().ok()) {
 		return;
 	}
@@ -351,7 +362,7 @@ void SetupWindowBlur(not_null<QWidget*> window) {
 			Qt::FindDirectChildrenOnly)) {
 		return;
 	}
-	(new WindowBlur(window))->setObjectName(u"aetherBlur"_q);
+	(new WindowBlur(window, area))->setObjectName(u"aetherBlur"_q);
 }
 
 } // namespace Aether

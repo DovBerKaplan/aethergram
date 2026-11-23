@@ -62,6 +62,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <kurlmimedata.h>
 
+#include "aether/aether_window.h"
+
 namespace Window {
 namespace {
 
@@ -77,8 +79,10 @@ using Core::WindowPosition;
 }
 
 [[nodiscard]] bool NativeFrameEnabled() {
+	// Aethergram: no title bar; the shelves reach the window's top and the
+	// buttons float in a shelf's corner (AETHERGRAM_NATIVE_FRAME=1 undoes it).
 	return Ui::Platform::NativeWindowFrameSupported()
-		&& Core::App().settings().nativeWindowFrame();
+		&& Aether::NativeFrame();
 }
 
 [[nodiscard]] QPoint ChildSkip() {
@@ -722,8 +726,10 @@ void MainWindow::refreshTitleWidget() {
 			_titleShadow->show();
 		}
 	} else {
+		setTitleStyle(Aether::FlatTitle());
 		setNativeFrame(false);
 		_titleShadow.destroy();
+		Aether::SetupFieldDrag(this);
 	}
 }
 
