@@ -135,6 +135,8 @@ PRIVATE
     # set_source_files_properties for aether_api.cpp below).
     aether/aether_api.cpp
     aether/aether_blur.cpp
+    aether/aether_client_bus.cpp
+    aether/aether_client_bus.h
     aether/aether_blur.h
     aether/aether_language.cpp
     aether/aether_language.h
